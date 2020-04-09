@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Alvin Zhang (3031881529), CS184-alvinzz</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, I learned how to draw and color triangles.</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+<p>
+Rasterizing a triangle involves converting its coordinates (and its color/texture) into RGB values in a framebuffer array, which corresponds to pixel colors on a display device. For a triangle of a single color, the simplest approach is to first test if the center of each pixel is located within the triangle. Pixels with their center within the triangle will then be given an RGB value equal to that triangles' color. </br></br>
+
+However, testing if each pixel within the framebuffer is within the triangle is computationally prohibitively expensive. Instead, we can bound the triangle by a tightly fitted rectangle containing the triangle. Checking all of the pixels within a rectangle will take approximately 2 times the amount of time as checking all of the pixels within the original triangle, which has the same runtime (O(n)) from a theoretical computational perspective. </br></br>
+
+The other technical detail involves checking whether or not a pixel is within a triangle. This is achieved by checking, for each edge of the triangle, that the target pixel and the opposing vertex are on the same side of the edge. Mathematically, we check if the dot product of a vector perpendicular to the edge (V_perp) and a vector from the target pixel to the edge (delta_P_0) has the same sign as the dot product of the same vector perpendicular to the edge (V_perp) and a vector from the opposing vertex to the edge (delta_P_1).
+</p>
+
+<div align="middle">
+  <img src="images/part1_jaggies.png" align="middle" width="400px"/>
+  <figcaption align="middle">Single-color triangle rasterization of basic/test4.svg for part 1.</figcaption>
+</div>
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+<p>
+Note in the above image that some pixels which belong to the red triangle do not actually appear to be connected to the triangle. This is caused by aliasing, which occurs when the base signal/true image (which has a really high frequency in the y-direction in the inset area) is sampled at too low a frequency. Supersampling approximates putting the true image through a low-pass filter before sampling, which ameliorates the aliasing problem. </br></br>
+
+To implement supersampling, I utilized a supersample buffer, which had <b>s</b> entries for each pixel in the original framebuffer, where <b>s</b> is the super-sampling rate. For each triangle, as in part 1, I then tested whether each sample in the supersample buffer was was located within the triangle and assigned it the triangle color if so. To resolve the supersample buffer to the original framebuffer resolution, I simply took the average color of the samples corresponding to each pixel in the original framebuffer resolution.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part1_jaggies.png" align="middle" width="400px"/>
+      </td>
+      <td>
+        <img src="images/part2_s4.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="images/part2_s16.png" align="middle" width="400px"/>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle"> Top left: supersample rate 1. Top right: supersample rate 4. Bottom left: supersample rate 16. Note that, although the true image of the signal has extremely high frequency along the y-direction, sampling at a per-pixel resolution (top left) makes the signal appear to be constant along the y-direction in places, due to aliasing. Low-pass filtering by supersampling at a rate of 4 or 16 before averaging decreases these aliasing artefacts (with 16 reducing artefacts more than 4, as visible at the very tip), though at the cost of increased computation. </figcaption>
+</div>
+
+<h3 align="middle">Part 3: Transforms</h3>
+<div align="middle">
+  <img src="images/part3_my_robot.png" align="middle" width="400px"/>
+  <figcaption align="middle">Cubeman executing a full-body dab.</figcaption>
+</div>
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+<p>
+So far, we've been working with triangles of a single color. However, a triangle may have a gradient of color across it. If each vertex of the triangle is associated with a certain color, barycentric coordinates give a way to smoothly interpolate color values across the triangle. In the barycentric coordinate system, a point is expressed in terms of a linear combination of the triangle vertices' coordinates (p = av_1 + bv_2 + cv_3), such that the coordinates of a point sum to 1 (a + b + c = 1). In geometric terms, a point is described as the weighted sum of the triangles' vertices, with the weighting of a vertex being proportional to the area of the triangle formed by the point and the vertex's opposing edge (see below).
+</p>
+
+<div align="middle">
+  <img src="images/part4_barycentric.png" align="middle" width="400px"/>
+  <figcaption align="middle">Geometric interpretation of barycentric coordinates in terms of triangle areas. Taken from the CS184 Spring 2020 course website, by Dr. Ren Ng.</figcaption>
+</div>
+
+<div align="middle">
+  <img src="images/part4_colorwheel.png" align="middle" width="400px"/>
+  <figcaption align="middle">Barycentric coordinates can be used to interpolate colors across a color wheel.</figcaption>
+</div>
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+<p>
+In the case that a triangle's color is specified by mapping its vertices onto a 2D texture map, we need a method for mapping pixels in a triangle to color values using the texture map. The first step is to map a point's coordinates in pixel space to coordinates in texel space. This can be done by getting first converting the point (in pixel coordinates) to triangle (barycentric) coordinates, using the triangle vertices in pixel coordinates. We can then use the point's triangle (barycentric) coordinates to get its location in texel space, using the texel coordinates of the triangle vertices. </br> </br>
+
+However, we are then faced with the same dilemma as in Parts 1 and 2: the point may not fall on an exact integer texel. We can either round it to the nearest texel ("nearest sampling"), or interpolate a color by computing a weighted average of the nearest texel values ("bilinear sampling"). As in barycentric coordinates, a texel will have more weight if it is closer to the point, and its weight is proportional to the opposing rectangle area. We can see the effects of using nearest or bilinear sampling on texmap/test1.svg in the figure below.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part5_nearest_s1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest-neighbor sampling, with 1x supersampling.</figcaption>
+      </td>
+      <td>
+        <img src="images/part5_nearest_s16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest-neighbor sampling, with 16x supersampling.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/part5_bilinear_s1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear sampling, with 1x supersampling.</figcaption>
+      </td>
+      <td>
+        <img src="images/part5_bilinear_s16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Bilinear sampling, with 16x supersampling.</figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle"> As we can see, bilinear sampling helps to smooth out transitions between texel values. It is most effective at preventing aliasing artefacts when there are high frequencies in the texture map itself; however, since it can only perform antialiasing at the texel resolution, it is not a perfect antialiasing tool. </figcaption>
+</div>
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p>
+As mentioned in the last section, bilinear sampling by itself is insufficient to achieve antialiasing, since the highest frequencies it can successfully attenuate are those at the texel resolution, whereas the texture map, once warped to pixel coordinates, may contain much higher frequencies. To address this problem, we need to be able to determine the degree of low-pass filtering that is needed for a given pixel, and we need to be able to achieve this level of frequency attenuation. </br> </br>
+
+The first problem is to determine the degree of low-pass filtering that is needed for a given pixel. To do this, we need to first estimate the frequency of the texture map once warped to pixel space, at a target pixel location. To do this, we take steps in the x- and y-directions in pixel space at the target pixel location, and see how far those steps take us in texel space. We then estimate the frequency of the texture map at the target pixel to be the maximum of the step distances in texel space. Although this is a very rough heuristic, it is computationally efficient and works well in practice. </br> </br>
+
+The second problem, of being able to efficiently achieve a certain degree of low-pass filtering, is resolved by storing "mipmaps", or texture maps downsampled to various degrees. Given that the texture map has a frequency <b>f</b> at a certain location, the mipmap at level L = log_2(<b>f</b>) should be used to achieve the correct amount of low-pass filtering. As before, for fractional L, we can either round to the nearest integer L ("nearest" interpolation), or perform a weighted interpolation between the two nearest integer Ls ("linear" interpolation). </br> </br>
+
+Overall, we have introduced a number of techniques for antialiasing, from supersampling in the pixel domain to bilinear or even trilinear interpolation for texture mapping. Supersampling is by far the most expensive of these techniques computationally, while also having a large memory overhead. Storing mipmaps is relatively cheap in memory (requiring 33% more memory than the base texture map), and has the most antialiasing power (for frequencies up to 2^L_max), but performing interpolation between levels doubles the number of computations required. Bilinear interpolation quadruples computation while only doubling the maximum frequency that can be attenuated; however, it is only only technique which can antialias sub-pixel frequencies in the texture map itself. It should also be noted that none of these techniques would be necessary if the texture map is very low resolution or the image is very zoomed in.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/part6_lzero_pnearest.png" align="middle" width="400px"/>
+        <figcaption align="middle">Layer 0, Nearest-neighbor sampling.</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_lzero_plinear.png" align="middle" width="400px"/>
+        <figcaption align="middle">Layer 0, Bilinear sampling.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/part6_lnearest_pnearest.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest layer, Nearest-neighbor sampling.</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_lnearest_plinear.png" align="middle" width="400px"/>
+        <figcaption align="middle">Nearest layer, Bilinear sampling.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/part6_llinear_pnearest.png" align="middle" width="400px"/>
+        <figcaption align="middle">Linear layer interpolation, Nearest-neighbor sampling.</figcaption>
+      </td>
+      <td>
+        <img src="images/part6_llinear_plinear.png" align="middle" width="400px"/>
+        <figcaption align="middle">Linear layer interpolation, Bilinear sampling.</figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle"> An illustration of different sampling methods between layers and pixel values. Differences are clearest in the upper left corner. Note that using linear interpolation between layers of the texture map smooths out the transition from low to high frequencies. </figcaption>
+</div>
+
+
+<h2 align="middle">Section III: Art Competition</h2>
+<p>If you are not participating in the optional art competition, don't worry about this section!</p>
+
+</body>
+</html>
