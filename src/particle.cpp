@@ -22,6 +22,7 @@ namespace CGL {
       isect.valid = true;
       isect.face = face;
       isect.distance = t;
+      isect.barycentric = Vector3D(b0, b1, b2);
       return true;
     }
     return false;
