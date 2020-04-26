@@ -14,6 +14,7 @@ namespace CGL {
     bool valid;
     FaceIter face;
     double distance;
+    Vector3D barycentric;
   };
 
   class Particle {
@@ -34,6 +35,7 @@ namespace CGL {
       }
 
       bool intersect(FaceIter& face);
+      void dentFace( Particle& p );
   };
 
 }  // namespace CGL
