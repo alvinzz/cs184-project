@@ -36,9 +36,9 @@ namespace CGL {
       double c = 0.1;
       Vector3D energy = c * 0.5 * this->mass * this->velocity * this->velocity * this->isect.barycentric;
 
-      v1->position = v1->position * (- v1->position.norm() * energy.x);
-      v2->position = v2->position * (- v2->position.norm() * energy.y);
-      v3->position = v3->position * (- v3->position.norm() * energy.z);
+      v1->position = v1->position + (- v1->position.norm() * energy.x);
+      v2->position = v2->position + (- v2->position.norm() * energy.y);
+      v3->position = v3->position + (- v3->position.norm() * energy.z);
   }
 
   bool Halfedge::isBoundary( void ) const
