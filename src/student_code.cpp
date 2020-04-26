@@ -322,7 +322,6 @@ namespace CGL
     // This routine should increase the number of triangles in the mesh using Loop subdivision.
 
       //Precompute new positions
-      cout << "1" << endl; 
       for (EdgeIter e = mesh.edgesBegin(); e != mesh.edgesEnd(); e++) {
             VertexIter A = e->halfedge()->vertex();
             VertexIter B = e->halfedge()->twin()->vertex();
@@ -331,7 +330,6 @@ namespace CGL
             e->newPosition = 3. / 8. * (A->position + B->position) + 1. / 8. * (C->position + D->position);
             e->isNew = false;
       }
-      cout << "2" << endl; 
       for (VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++) {
           int n = v->degree(); 
           float u;
@@ -358,7 +356,6 @@ namespace CGL
           v->isNew = false;
       }
 
-      cout << "3" << endl;
     //4-1 Subdivision
     //  Split original
       int mesh_size = mesh.nEdges(); 
@@ -368,18 +365,15 @@ namespace CGL
           advance(edg,1); 
       }
     //  Flip New
-      cout << "4" << endl; 
       for (EdgeIter e = mesh.edgesBegin(); e != mesh.edgesEnd(); e++) {
           if (e->isNew && (e->halfedge()->vertex()->isNew != e->halfedge()->twin()->vertex()->isNew)) {
               mesh.flipEdge(e); 
           }
       }
 
-      cout << "5" << endl; 
       //Update old
       for (VertexIter v = mesh.verticesBegin(); v != mesh.verticesEnd(); v++) {
           if (!v->isNew) {
-              cout << "gotem" << endl; 
               v->position = v->newPosition; 
           }
       }

@@ -149,7 +149,7 @@
 #include "CGL/CGL.h" // Standard 462 Vectors, etc.
 
 #include "mesh.h"
-// #include "particle.h"
+#include "float.h"
 
 using namespace std;
 using namespace CGL;
@@ -214,9 +214,11 @@ namespace CGL
         this->velocity = velocity;
         this->isect = Isect();
         this->isect.valid = false;
+        this->isect.distance = DBL_MAX;
       }
 
       bool intersect(FaceIter& face);
+      void dentFace();
   };
 
   /*

@@ -220,14 +220,14 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    Vector3D source_position = Vector3D(0, 0, 100);
+    Vector3D source_position = Vector3D(0.5, 0.5, 100);
     Vector3D direction = Vector3D(0, 0, -1);
     double mass = 0.001;
     double velocity = 10.;
     Particle p = Particle(source_position, direction, mass, velocity);
     for( vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ )
     {
-      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd; f++) {
+      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
         p.intersect(f);
       }
     }
@@ -284,6 +284,7 @@ namespace CGL {
       case 'p':
       case 'P':
         blowParticles();
+        break;
       default:
         break;
     }

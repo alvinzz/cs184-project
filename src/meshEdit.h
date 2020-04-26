@@ -285,6 +285,7 @@ class MeshEdit : public Renderer {
   void drawVertices ( HalfedgeMesh& mesh );
   void drawHalfedges( HalfedgeMesh& mesh );
   void drawHalfedgeArrow( Halfedge* h );
+  void blowParticles();
 
   // Sets the draw style (colors, edge widths, etc.) for the specified
   // mesh element according to whether it is hovered or selected, using
