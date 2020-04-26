@@ -1,8 +1,8 @@
 //========================================================================
-// GLFW 3.4 POSIX - www.glfw.org
+// GLFW 3.1 POSIX - www.glfw.org
 //------------------------------------------------------------------------
 // Copyright (c) 2002-2006 Marcus Geelnard
-// Copyright (c) 2006-2017 Camilla Löwy <elmindreda@glfw.org>
+// Copyright (c) 2006-2010 Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -24,16 +24,33 @@
 //    distribution.
 //
 //========================================================================
-// It is fine to use C99 in this file because it will not be built with VS
-//========================================================================
-
-#define _POSIX_C_SOURCE 199309L
 
 #include "internal.h"
 
-#include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
+
+// Return raw time
+//
+static uint64_t getRawTime(void)
+{
+#if defined(CLOCK_MONOTONIC)
+    if (_glfw.posix_time.monotonic)
+    {
+        struct timespec ts;
+
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        return (uint64_t) ts.tv_sec * (uint64_t) 1000000000 + (uint64_t) ts.tv_nsec;
+    }
+    else
+#endif
+    {
+        struct timeval tv;
+
+        gettimeofday(&tv, NULL);
+        return (uint64_t) tv.tv_sec * (uint64_t) 1000000 + (uint64_t) tv.tv_usec;
+    }
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,22 +59,23 @@
 
 // Initialise timer
 //
-void _glfwInitTimerPOSIX(void)
+void _glfwInitTimer(void)
 {
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+#if defined(CLOCK_MONOTONIC)
     struct timespec ts;
 
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
     {
-        _glfw.timer.posix.monotonic = GLFW_TRUE;
-        _glfw.timer.posix.frequency = 1000000000;
+        _glfw.posix_time.monotonic = GL_TRUE;
+        _glfw.posix_time.resolution = 1e-9;
     }
     else
 #endif
     {
-        _glfw.timer.posix.monotonic = GLFW_FALSE;
-        _glfw.timer.posix.frequency = 1000000;
+        _glfw.posix_time.resolution = 1e-6;
     }
+
+    _glfw.posix_time.base = getRawTime();
 }
 
 
@@ -65,26 +83,15 @@ void _glfwInitTimerPOSIX(void)
 //////                       GLFW platform API                      //////
 //////////////////////////////////////////////////////////////////////////
 
-uint64_t _glfwPlatformGetTimerValue(void)
+double _glfwPlatformGetTime(void)
 {
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
-    if (_glfw.timer.posix.monotonic)
-    {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        return (uint64_t) ts.tv_sec * (uint64_t) 1000000000 + (uint64_t) ts.tv_nsec;
-    }
-    else
-#endif
-    {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        return (uint64_t) tv.tv_sec * (uint64_t) 1000000 + (uint64_t) tv.tv_usec;
-    }
+    return (double) (getRawTime() - _glfw.posix_time.base) *
+        _glfw.posix_time.resolution;
 }
 
-uint64_t _glfwPlatformGetTimerFrequency(void)
+void _glfwPlatformSetTime(double time)
 {
-    return _glfw.timer.posix.frequency;
+    _glfw.posix_time.base = getRawTime() -
+        (uint64_t) (time / _glfw.posix_time.resolution);
 }
 

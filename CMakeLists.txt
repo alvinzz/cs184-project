@@ -1,153 +1,180 @@
-cmake_minimum_required(VERSION 3.8)
-project(Assignment3)
+cmake_minimum_required(VERSION 2.8)
+project(ColladaViewer)
 
 #-------------------------------------------------------------------------------
 # Build options
 #-------------------------------------------------------------------------------
-option(BUILD_DEBUG     "Build with debug settings"    ON)
+option(BUILD_LIBCGL "Build with libCGL"         ON)
+option(BUILD_DEBUG     "Build with debug settings"    OFF)
 option(BUILD_DOCS      "Build documentation"          OFF)
 
-set(BUILD_DEBUG ${BUILD_DEBUG} CACHE BOOL "Build debug" FORCE)
-
-if (BUILD_DEBUG)
-  include (CTest)
-  set(CMAKE_BUILD_TYPE Debug)
-endif()
-
 #-------------------------------------------------------------------------------
-# Set target
+# Platform-specific settings
 #-------------------------------------------------------------------------------
-set(APPLICATION_SOURCE
 
-    # Collada Parser
-    src/scene/collada/collada.cpp
-    src/scene/collada/camera_info.cpp
-    src/scene/collada/light_info.cpp
-    src/scene/collada/sphere_info.cpp
-    src/scene/collada/polymesh_info.cpp
-    src/scene/collada/material_info.cpp
+###################
+# Building on OSX #
+###################
+if(APPLE)
 
-    # Dynamic Scene
-    src/scene/gl_scene/mesh.cpp
-    src/scene/gl_scene/scene.cpp
-    src/scene/gl_scene/sphere.cpp
+  # Clang only
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "CLANG")
 
-    # Scene Object & Structure
-    src/scene/sphere.cpp
-    src/scene/triangle.cpp
-    src/scene/object.cpp
-    src/scene/environment_light.cpp
-    src/scene/light.cpp
-    src/scene/bvh.cpp
-    src/scene/bbox.cpp
+    # OSX Framework dependencies
+    if(NOT BUILD_LIBCGL)
+      include_directories( "/System/Library/Frameworks" )
+      find_library (COCOA_LIBRARIES Cocoa)
+      find_library (IOKIT_LIBRARIES IOkit)
+      find_library (COREVIDEO_LIBRARIES CoreVideo)
+    endif()
 
-    # MeshEdit
-    src/util/halfEdgeMesh.cpp
-    src/application/meshEdit.cpp
+    # Clang configuration
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
 
-    # Pathtracer
-    src/pathtracer/camera.cpp
-    src/pathtracer/sampler.cpp
-    src/pathtracer/bsdf.cpp
-    src/pathtracer/pathtracer.cpp
-    src/pathtracer/raytraced_renderer.cpp
+      set(CLANG_CXX_FLAGS "-std=c++11 -m64 -Wconversion")
 
-    # misc
-    src/util/sphere_drawing.cpp
+      if(BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -g")
+      else(BUILD_DEBUG)
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -O3")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -funroll-loops")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -Wno-narrowing")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -Wno-deprecated-register")
+      endif(BUILD_DEBUG)
 
-    # Application
-    src/application/application.cpp
-    src/application/main.cpp
-)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CLANG_CXX_FLAGS}")
 
-set(APPLICATION_HEADERS
-    # Collada Parser
-    src/scene/collada/camera_info.h
-    src/scene/collada/collada_info.h
-    src/scene/collada/collada.h
-    src/scene/collada/light_info.h
-    src/scene/collada/material_info.h
-    src/scene/collada/polymesh_info.h
-    src/scene/collada/sphere_info.h
-    # Dynamic Scene
-    src/scene/gl_scene/ambient_light.h
-    src/scene/gl_scene/area_light.h
-    src/scene/gl_scene/directional_light.h
-    src/scene/gl_scene/draw_style.h
-    src/scene/gl_scene/environment_light.h
-    src/scene/gl_scene/material.h
-    src/scene/gl_scene/mesh_view.h
-    src/scene/gl_scene/mesh.h
-    src/scene/gl_scene/point_light.h
-    src/scene/gl_scene/scene.h
-    src/scene/gl_scene/sphere.h
-    src/scene/gl_scene/spot_light.h
-    # Scene Object & Structure
-    src/scene/aggregate.h
-    src/scene/bbox.h
-    src/scene/bvh.h
-    src/scene/environment_light.h
-    src/scene/light.h
-    src/scene/object.h
-    src/scene/primitive.h
-    src/scene/scene.h
-    src/scene/sphere.h
-    src/scene/triangle.h
-    # MeshEdit
-    src/util/halfEdgeMesh.h
-    src/util/image.h
-    src/util/mutablePriorityQueue.h
-    src/util/random_util.h
-    src/util/work_queue.h
-    # Pathtracer
-    src/pathtracer/bsdf.h
-    src/pathtracer/camera.h
-    src/pathtracer/intersection.h
-    src/pathtracer/pathtracer.h
-    src/pathtracer/ray.h
-    src/pathtracer/raytraced_renderer.h
-    src/pathtracer/sampler.h
-    # misc
-    src/util/sphere_drawing.h
-    # Application
-    src/application/application.h
-    src/application/meshEdit.h
-    src/application/renderer.h
-)
+    endif()
 
-if (WIN32)
-    list(APPEND APPLICATION_SOURCE src/util/win32/getopt.c)
-endif()
+    # GCC configuration
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-add_executable(pathtracer ${APPLICATION_SOURCE} ${APPLICATION_HEADERS})
-add_test(dragon_test pathtracer -t 8 -s 16 -l 8 -H -f dragon_test.png -r 480 360 ../dae/sky/dragon.dae)
-target_include_directories(pathtracer PUBLIC src)
+      set(GCC_CXX_FLAGS "-std=gnu++11 -m64 -Wconversion")
 
-target_link_libraries(pathtracer PUBLIC CGL)
+      if(BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -g")
+      else(BUILD_DEBUG)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -O3")
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -fopenmp")
+      endif(BUILD_DEBUG)
+
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_CXX_FLAGS}")
+
+    endif()
+
+  endif()
+
+endif(APPLE)
+
+##################
+# Build on Linux #
+##################
+set(LINUX UNIX AND NOT APPLE)
+if(LINUX)
+
+  # GCC only
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+
+    set(GCC_CXX_FLAGS "-std=gnu++11 -m64 -Wconversion")
+
+    # X11 Dependencies
+    if(NOT BUILD_LIBCGL)
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXi")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXxf86vm")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXinerama")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXcursor")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXfixes")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXrandr")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXext")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXrender")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lX11")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lpthread")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lxcb")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXau")
+    endif()
+
+    # Debug configuration
+    if(BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -g")
+    else(BUILD_DEBUG)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -O3")
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -fopenmp")
+    endif(BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_CXX_FLAGS}")
+
+  endif()
+
+endif(LINUX)
+
+####################
+# Build on Windows #
+####################
+if(WIN32)
+
+  if(MSVC)
+
+    set(MSVC_CXX_FLAGS "/std=c++14")
+
+    if(BUILD_DEBUG)
+      set(CMAKE_BUILD_TYPE Debug)
+    else(BUILD_DEBUG)
+      set(MSVC_CXX_FLAGS "${MSVC_CXX_FLAGS} /O2")
+    endif(BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_CXX_FLAGS}")
+
+  endif(MSVC)
+
+  if(MINGW)
+
+    set(MSVC_CXX_FLAGS "-std=c++11")
+
+    if(BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+    else(BUILD_DEBUG)
+    endif(BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_CXX_FLAGS}")
+
+  endif(MINGW)
+
+endif(WIN32)
 
 #-------------------------------------------------------------------------------
 # Find dependencies
 #-------------------------------------------------------------------------------
-add_subdirectory(CGL)
-target_include_directories(pathtracer PUBLIC ${CGL_INCLUDE_DIRS})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CGL_CXX_FLAGS}")
 
-set(OpenGL_GL_PREFERENCE LEGACY)
+# Required packages
 find_package(OpenGL REQUIRED)
-target_link_libraries(pathtracer PUBLIC OpenGL::GL)
-target_link_libraries(pathtracer PUBLIC OpenGL::GLU)
+find_package(Freetype REQUIRED)
+
+# CGL
+if(BUILD_LIBCGL)
+  add_subdirectory(CGL)
+  include_directories(CGL/include)
+else(BUILD_LIBCGL)
+  find_package(CGL REQUIRED)
+  find_package(GLEW REQUIRED)
+  find_package(GLFW REQUIRED)
+endif(BUILD_LIBCGL)
+
 
 #-------------------------------------------------------------------------------
 # Add subdirectories
 #-------------------------------------------------------------------------------
+add_subdirectory(src)
 
-# build documentation
+# build documentation 
 if(BUILD_DOCS)
   find_package(DOXYGEN)
   if(DOXYGEN_FOUND AND BUILD_DOCS)
-    add_subdirectory(docs)
+    add_subdirectory(documentation)
   endif()
 endif()
 
 # Install settings
-set(CMAKE_INSTALL_PREFIX "${Assignment1_SOURCE_DIR}/")
+set(CMAKE_INSTALL_PREFIX "${ColladaViewer_SOURCE_DIR}/")

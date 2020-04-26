@@ -1,8 +1,8 @@
 #include <string>
 #include <iostream>
 
-#include "CGL/viewer.h"
-#include "CGL/renderer.h"
+#include "viewer.h"
+#include "renderer.h"
 
 using namespace std;
 using namespace CGL;
@@ -13,11 +13,11 @@ class TextDrawer : public Renderer {
   ~TextDrawer() { }
 
   string name() {
-    return "Text manager example";
+    return "Text Renderer";
   }
 
   string info() {
-    return "Text manager example";
+    return "I just draw a bunch of text on screen";
   }
 
   void init() {
@@ -46,8 +46,10 @@ class TextDrawer : public Renderer {
     return;
   }
 
-  void cursor_event(float x, float y) {
-    text_mgr.set_anchor(line0, 2 * (x - .5 * w) / w, 2 * (.5 * h - y) / h);      
+  void cursor_event(float x, float y, unsigned char keys) {
+    if (keys & (1 << 2)) {
+      text_mgr.set_anchor(line0, 2 * (x - .5 * w) / w, 2 * (.5 * h - y) / h);
+    }
   }
 
   void scroll_event(float offset_x, float offset_y) {

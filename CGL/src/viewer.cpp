@@ -13,8 +13,8 @@
 using namespace std;
 using namespace chrono;
 
-#define DEFAULT_W 800
-#define DEFAULT_H 600
+#define DEFAULT_W 960
+#define DEFAULT_H 640
 
 namespace CGL {
 
@@ -23,8 +23,8 @@ bool Viewer::HDPI;
 
 // framecount & related timeers
 int Viewer::framecount;
-time_point<system_clock> Viewer::sys_last; 
-time_point<system_clock> Viewer::sys_curr; 
+time_point<system_clock> Viewer::sys_last;
+time_point<system_clock> Viewer::sys_curr;
 
 // draw toggles
 bool Viewer::showInfo = true;
@@ -35,7 +35,7 @@ size_t Viewer::buffer_w;
 size_t Viewer::buffer_h;
 
 // user space renderer
-Renderer* Viewer::renderer; 
+Renderer* Viewer::renderer;
 
 // on-screen display
 OSDText* Viewer::osd_text;
@@ -50,16 +50,14 @@ Viewer::~Viewer() {
 
   glfwDestroyWindow(window);
   glfwTerminate();
+
   // free resources
   delete renderer;
   delete osd_text;
 }
 
-void Viewer::init() {
-  Viewer::init(DEFAULT_W, DEFAULT_H);
-}
 
-void Viewer::init(int width, int height) {
+void Viewer::init() {
 
   // initialize glfw
   glfwSetErrorCallback( err_callback );
@@ -69,8 +67,8 @@ void Viewer::init(int width, int height) {
   }
 
   // create window
-  string title = renderer ? "CS184: " + renderer->name() : "CS184";
-  window = glfwCreateWindow( width, height, title.c_str(), NULL, NULL );
+  string title = renderer ? "CGL: " + renderer->name() : "CGL";
+  window = glfwCreateWindow( DEFAULT_W, DEFAULT_H, title.c_str(), NULL, NULL );
   if (!window) {
     out_err("Error: could not create window!");
     glfwTerminate();
@@ -83,16 +81,16 @@ void Viewer::init(int width, int height) {
 
   // framebuffer event callbacks
   glfwSetFramebufferSizeCallback( window, resize_callback );
-  
+
   // key event callbacks
   glfwSetKeyCallback( window, key_callback );
-  
+
   // cursor event callbacks
   glfwSetCursorPosCallback( window, cursor_callback );
 
   // wheel event callbacks
-  glfwSetScrollCallback(window, scroll_callback);  
-  
+  glfwSetScrollCallback(window, scroll_callback);
+
   // mouse button callbacks
   glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
   glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -114,9 +112,9 @@ void Viewer::init(int width, int height) {
 
   // initialize renderer if already set
   if (renderer){
-    if (HDPI) renderer->use_hdpi_render_target();
+    if (HDPI) renderer->use_hdpi_reneder_target();
     renderer->init();
-  } 
+  }
 
   // initialize status OSD
   osd_text = new OSDText();
@@ -124,11 +122,11 @@ void Viewer::init(int width, int height) {
     out_err("Error: could not initialize on-screen display!");
     exit( 1 );
   }
-  
+
   // add lines for renderer and fps
-  line_id_renderer  = osd_text->add_line(-0.95,  0.90, "Renderer", 
+  line_id_renderer  = osd_text->add_line(-0.95,  0.90, "Renderer",
                                           18, Color(0.15, 0.5, 0.15));
-  line_id_framerate = osd_text->add_line(-0.98, -0.96, "Framerate", 
+  line_id_framerate = osd_text->add_line(-0.98, -0.96, "Framerate",
                                           14, Color(0.15, 0.5, 0.15));
 
   // resize elements to current size
@@ -137,12 +135,11 @@ void Viewer::init(int width, int height) {
 }
 
 void Viewer::start() {
-
   // start timer
   sys_last = system_clock::now();
 
   // run update loop
-  while( !glfwWindowShouldClose( window ) ) {  
+  while( !glfwWindowShouldClose( window ) ) {
     update();
   }
 }
@@ -152,7 +149,7 @@ void Viewer::set_renderer(Renderer *renderer) {
 }
 
 void Viewer::update() {
-  
+
   // clear frame
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -163,11 +160,11 @@ void Viewer::update() {
 
   // draw info
   if( showInfo ) {
-    drawInfo();        
-  } 
+    drawInfo();
+  }
 
   // swap buffers
-  glfwSwapBuffers(window); 
+  glfwSwapBuffers(window);
 
   // poll events
   glfwPollEvents();
@@ -189,19 +186,19 @@ void Viewer::drawInfo() {
 
     // reset timer and counter
     framecount = 0;
-    sys_last = sys_curr; 
+    sys_last = sys_curr;
 
   } else {
 
     // increment framecount
     framecount++;
-  
+
   }
 
   // udpate renderer OSD
   // TODO: This is done on every update and it shouldn't be!
   // The viewer should only update when the renderer needs to
-  // update the info text. 
+  // update the info text.
   if (renderer) {
     string renderer_info = renderer->info();
     osd_text->set_text(line_id_renderer, renderer_info);
@@ -219,12 +216,25 @@ void Viewer::err_callback( int error, const char* description ) {
     out_err( "GLFW Error: " << description );
 }
 
+void Viewer::key_callback( GLFWwindow* window,
+                           int key, int scancode, int action, int mods ) {
+  if( action == GLFW_PRESS ) {
+    if( key == GLFW_KEY_ESCAPE ) {
+      glfwSetWindowShouldClose( window, true );
+    } else if( key == GLFW_KEY_GRAVE_ACCENT ) {
+      showInfo = !showInfo;
+    } else {
+      renderer->key_event(key);
+    }
+  }
+}
+
 void Viewer::resize_callback( GLFWwindow* window, int width, int height ) {
 
   // get framebuffer size
-  int w, h; 
+  int w, h;
   glfwGetFramebufferSize(window, &w, &h );
-    
+
   // update buffer size
   buffer_w = w; buffer_h = h;
   glViewport( 0, 0, buffer_w, buffer_h );
@@ -233,20 +243,28 @@ void Viewer::resize_callback( GLFWwindow* window, int width, int height ) {
   osd_text->resize(buffer_w, buffer_h);
 
   // resize render if there is a user space renderer
-  if (renderer) renderer->resize( buffer_w, buffer_h );  
+  if (renderer) renderer->resize( buffer_w, buffer_h );
 }
 
 void Viewer::cursor_callback( GLFWwindow* window, double xpos, double ypos ) {
+
+  // get keydown bitmask
+  unsigned char keys;
+  keys  |= (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)   == GLFW_PRESS);
+  keys <<= 1;
+  keys  |= (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS);
+  keys <<= 1;
+  keys  |= (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)  == GLFW_PRESS);
 
   // forward pan event to renderer
   if( HDPI ) {
     float cursor_x = 2 * xpos;
     float cursor_y = 2 * ypos;
-    renderer->cursor_event(cursor_x, cursor_y);
+    renderer->cursor_event(cursor_x, cursor_y, keys);
   } else {
     float cursor_x = xpos;
     float cursor_y = ypos;
-    renderer->cursor_event(cursor_x, cursor_y);
+    renderer->cursor_event(cursor_x, cursor_y, keys);
   }
 
 }
@@ -257,29 +275,10 @@ void Viewer::scroll_callback( GLFWwindow* window, double xoffset, double yoffset
 
 }
 
-
 void Viewer::mouse_button_callback( GLFWwindow* window, int button, int action, int mods ) {
 
-  renderer->mouse_event( button, action, mods );
+  renderer->mouse_button_event( button, action );
 
 }
-
-void Viewer::key_callback( GLFWwindow* window, 
-                           int key, int scancode, int action, int mods ) {
-
-  if (action == GLFW_PRESS) {
-    if( key == GLFW_KEY_ESCAPE ) { 
-      exit(0);
-      // glfwSetWindowShouldClose( window, true ); 
-    } else if( key == GLFW_KEY_GRAVE_ACCENT ){
-      showInfo = !showInfo;
-    } 
-  }
-  
-  renderer->keyboard_event( key, action, mods );
-}
-
-
 
 } // namespace CGL
-

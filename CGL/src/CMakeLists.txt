@@ -1,9 +1,6 @@
-# Original file Copyright CMU462 Fall 2015: 
-# Kayvon Fatahalian, Keenan Crane,
-# Sky Gao, Bryce Summers, Michael Choquette.
 cmake_minimum_required(VERSION 2.8)
 
-include_directories(${PROJECT_SOURCE_DIR}/include/CGL)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # CGL library source files
 set(CGL_SOURCE
@@ -15,20 +12,35 @@ set(CGL_SOURCE
     quaternion.cpp
     complex.cpp
     color.cpp
-    spectrum.cpp
     osdtext.cpp
     osdfont.cpp
     viewer.cpp
     base64.cpp
-    lodepng.cpp
     tinyxml2.cpp
-    path.cpp
+)
+
+# CGL library header files
+set(CGL_HEADER
+    CGL.h
+    vector2D.h
+    vector3D.h
+    vector4D.h
+    matrix3x3.h
+    matrix4x4.h
+    quaternion.h
+    complex.h
+    color.h
+    osdtext.h
+    viewer.h
+    base64.h
+    tinyxml2.h
+    renderer.h
 )
 
 #-------------------------------------------------------------------------------
 # Building static library (always)
 #-------------------------------------------------------------------------------
-add_library(CGL STATIC ${CGL_SOURCE})
+add_library(CGL STATIC ${CGL_SOURCE} ${CGL_HEADER})
 
 target_link_libraries(
   CGL
@@ -42,7 +54,7 @@ target_link_libraries(
 # Building shared library
 #-------------------------------------------------------------------------------
 if(CGL_BUILD_SHARED)
-  add_library(CGL_SHARED SHARED ${CGL_SOURCE})
+  add_library(CGL_SHARED SHARED ${CGL_SOURCE} ${CGL_HEADER})
   target_link_libraries(
     CGL_SHARED
     ${GLEW_LIBRARIES}
@@ -82,13 +94,14 @@ if (APPLE)
       set_target_properties(CGL_SHARED PROPERTIES OUTPUT_NAME CGL_osx)
     endif()
   endif(CGL_BUILD_DEBUG)
-
+  
 endif(APPLE)
 
 ##################
 # Build on Linux #
 ##################
-if(UNIX AND NOT APPLE)
+set(LINUX UNIX AND NOT APPLE)
+if(LINUX)
   if(CGL_BUILD_DEBUG)
     set_target_properties(CGL PROPERTIES OUTPUT_NAME CGL_d)
     if(CGL_BUILD_SHARED)
@@ -100,13 +113,13 @@ if(UNIX AND NOT APPLE)
       set_target_properties(CGL_SHARED PROPERTIES OUTPUT_NAME CGL)
     endif()
   endif(CGL_BUILD_DEBUG)
-endif()
+endif(LINUX)
 
 ####################
 # Build on Windows #
 ####################
 if(WIN32)
-
+  
   if(MSVC)
     if(CGL_BUILD_DEBUG)
       set_target_properties(CGL PROPERTIES OUTPUT_NAME CGL_d)

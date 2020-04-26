@@ -7,6 +7,7 @@
 
 #include "base64.h"
 #include "console.h"
+#include "osdfont.cpp"
 
 using namespace std;
 
@@ -355,8 +356,8 @@ GLuint OSDText::compile_shaders() {
     printf("%s\n", &program_errmsg[0]);
   }
 
-  glDetachShader(program, vert_shader);
-  glDetachShader(program, frag_shader);
+  glDetachShader(1, vert_shader);
+  glDetachShader(1, frag_shader);
   glDeleteShader(vert_shader);
   glDeleteShader(frag_shader);
 

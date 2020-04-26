@@ -1,6 +1,6 @@
 //========================================================================
 // Empty event test
-// Copyright (c) Camilla Löwy <elmindreda@glfw.org>
+// Copyright (c) Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -29,15 +29,13 @@
 
 #include "tinycthread.h"
 
-#include <glad/gl.h>
-#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-static volatile int running = GLFW_TRUE;
+static volatile GLboolean running = GL_TRUE;
 
 static void error_callback(int error, const char* description)
 {
@@ -63,7 +61,7 @@ static int thread_main(void* data)
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
 static float nrand(void)
@@ -92,7 +90,6 @@ int main(void)
     }
 
     glfwMakeContextCurrent(window);
-    gladLoadGL(glfwGetProcAddress);
     glfwSetKeyCallback(window, key_callback);
 
     if (thrd_create(&thread, thread_main, NULL) != thrd_success)
@@ -119,7 +116,7 @@ int main(void)
         glfwWaitEvents();
 
         if (glfwWindowShouldClose(window))
-            running = GLFW_FALSE;
+            running = GL_FALSE;
     }
 
     glfwHideWindow(window);

@@ -1,6 +1,6 @@
 //========================================================================
 // Simple multi-window test
-// Copyright (c) Camilla Löwy <elmindreda@glfw.org>
+// Copyright (c) Camilla Berglund <elmindreda@elmindreda.org>
 //
 // This software is provided 'as-is', without any express or implied
 // warranty. In no event will the authors be held liable for any damages
@@ -27,31 +27,17 @@
 //
 //========================================================================
 
-#include <glad/gl.h>
-#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
-static GLFWwindow* windows[4];
-static const char* titles[] =
+static const char* titles[4] =
 {
-    "Red",
-    "Green",
-    "Blue",
-    "Yellow"
-};
-
-static const struct
-{
-    float r, g, b;
-} colors[] =
-{
-    { 0.95f, 0.32f, 0.11f },
-    { 0.50f, 0.80f, 0.16f },
-    {   0.f, 0.68f, 0.94f },
-    { 0.98f, 0.74f, 0.04f }
+    "Foo",
+    "Bar",
+    "Baz",
+    "Quux"
 };
 
 static void error_callback(int error, const char* description)
@@ -59,67 +45,32 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error: %s\n", description);
 }
 
-static void arrange_windows(void)
-{
-    int xbase, ybase;
-    glfwGetWindowPos(windows[0], &xbase, &ybase);
-
-    for (int i = 0;  i < 4;  i++)
-    {
-        int left, top, right, bottom;
-        glfwGetWindowFrameSize(windows[i], &left, &top, &right, &bottom);
-        glfwSetWindowPos(windows[i],
-                         xbase + (i & 1) * (200 + left + right),
-                         ybase + (i >> 1) * (200 + top + bottom));
-    }
-}
-
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action != GLFW_PRESS)
-        return;
-
-    switch (key)
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
     {
-        case GLFW_KEY_SPACE:
-        {
-            int xpos, ypos;
-            glfwGetWindowPos(window, &xpos, &ypos);
-            glfwSetWindowPos(window, xpos, ypos);
-            break;
-        }
-
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-            break;
-
-        case GLFW_KEY_D:
-        {
-            for (int i = 0;  i < 4;  i++)
-            {
-                const int decorated = glfwGetWindowAttrib(windows[i], GLFW_DECORATED);
-                glfwSetWindowAttrib(windows[i], GLFW_DECORATED, !decorated);
-            }
-
-            arrange_windows();
-            break;
-        }
+        int xpos, ypos;
+        glfwGetWindowPos(window, &xpos, &ypos);
+        glfwSetWindowPos(window, xpos, ypos);
     }
 }
 
-int main(int argc, char** argv)
+int main(void)
 {
+    int i;
+    GLboolean running = GL_TRUE;
+    GLFWwindow* windows[4];
+
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
 
-    for (int i = 0;  i < 4;  i++)
+    for (i = 0;  i < 4;  i++)
     {
-        if (i > 0)
-            glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+        int left, top, right, bottom;
 
         windows[i] = glfwCreateWindow(200, 200, titles[i], NULL, NULL);
         if (!windows[i])
@@ -131,31 +82,36 @@ int main(int argc, char** argv)
         glfwSetKeyCallback(windows[i], key_callback);
 
         glfwMakeContextCurrent(windows[i]);
-        gladLoadGL(glfwGetProcAddress);
-        glClearColor(colors[i].r, colors[i].g, colors[i].b, 1.f);
+        glClearColor((GLclampf) (i & 1),
+                     (GLclampf) (i >> 1),
+                     i ? 0.f : 1.f,
+                     0.f);
+
+        glfwGetWindowFrameSize(windows[i], &left, &top, &right, &bottom);
+        glfwSetWindowPos(windows[i],
+                         100 + (i & 1) * (200 + left + right),
+                         100 + (i >> 1) * (200 + top + bottom));
     }
 
-    arrange_windows();
-
-    for (int i = 0;  i < 4;  i++)
+    for (i = 0;  i < 4;  i++)
         glfwShowWindow(windows[i]);
 
-    for (;;)
+    while (running)
     {
-        for (int i = 0;  i < 4;  i++)
+        for (i = 0;  i < 4;  i++)
         {
             glfwMakeContextCurrent(windows[i]);
             glClear(GL_COLOR_BUFFER_BIT);
             glfwSwapBuffers(windows[i]);
 
             if (glfwWindowShouldClose(windows[i]))
-            {
-                glfwTerminate();
-                exit(EXIT_SUCCESS);
-            }
+                running = GL_FALSE;
         }
 
-        glfwWaitEvents();
+        glfwPollEvents();
     }
+
+    glfwTerminate();
+    exit(EXIT_SUCCESS);
 }
 

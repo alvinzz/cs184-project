@@ -3,27 +3,23 @@
 //
 // The program uses a "split window" view, rendering four views of the
 // same scene in one window (e.g. uesful for 3D modelling software). This
-// demo uses scissors to separate the four different rendering areas from
+// demo uses scissors to separete the four different rendering areas from
 // each other.
 //
 // (If the code seems a little bit strange here and there, it may be
 //  because I am not a friend of orthogonal projections)
 //========================================================================
 
-#include <glad/gl.h>
-#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_GLU
 #include <GLFW/glfw3.h>
-
-#if defined(_MSC_VER)
- // Make MS math.h define M_PI
- #define _USE_MATH_DEFINES
-#endif
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <linmath.h>
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 
 //========================================================================
@@ -153,7 +149,6 @@ static void drawGrid(float scale, int steps)
 {
     int i;
     float x, y;
-    mat4x4 view;
 
     glPushMatrix();
 
@@ -162,13 +157,10 @@ static void drawGrid(float scale, int steps)
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Setup modelview matrix (flat XY view)
-    {
-        vec3 eye = { 0.f, 0.f, 1.f };
-        vec3 center = { 0.f, 0.f, 0.f };
-        vec3 up = { 0.f, 1.f, 0.f };
-        mat4x4_look_at(view, eye, center, up);
-    }
-    glLoadMatrixf((const GLfloat*) view);
+    glLoadIdentity();
+    gluLookAt(0.0, 0.0, 1.0,
+              0.0, 0.0, 0.0,
+              0.0, 1.0, 0.0);
 
     // We don't want to update the Z-buffer
     glDepthMask(GL_FALSE);
@@ -217,14 +209,13 @@ static void drawAllViews(void)
     const GLfloat light_diffuse[4]  = {1.0f, 1.0f, 1.0f, 1.0f};
     const GLfloat light_specular[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     const GLfloat light_ambient[4]  = {0.2f, 0.2f, 0.3f, 1.0f};
-    float aspect;
-    mat4x4 view, projection;
+    double aspect;
 
     // Calculate aspect of window
     if (height > 0)
-        aspect = (float) width / (float) height;
+        aspect = (double) width / (double) height;
     else
-        aspect = 1.f;
+        aspect = 1.0;
 
     // Clear screen
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -256,13 +247,10 @@ static void drawAllViews(void)
     glViewport(0, height / 2, width / 2, height / 2);
     glScissor(0, height / 2, width / 2, height / 2);
     glMatrixMode(GL_MODELVIEW);
-    {
-        vec3 eye = { 0.f, 10.f, 1e-3f };
-        vec3 center = { 0.f, 0.f, 0.f };
-        vec3 up = { 0.f, 1.f, 0.f };
-        mat4x4_look_at( view, eye, center, up );
-    }
-    glLoadMatrixf((const GLfloat*) view);
+    glLoadIdentity();
+    gluLookAt(0.0f, 10.0f, 1e-3f,   // Eye-position (above)
+              0.0f, 0.0f, 0.0f,     // View-point
+              0.0f, 1.0f, 0.0f);   // Up-vector
     drawGrid(0.5, 12);
     drawScene();
 
@@ -270,13 +258,10 @@ static void drawAllViews(void)
     glViewport(0, 0, width / 2, height / 2);
     glScissor(0, 0, width / 2, height / 2);
     glMatrixMode(GL_MODELVIEW);
-    {
-        vec3 eye = { 0.f, 0.f, 10.f };
-        vec3 center = { 0.f, 0.f, 0.f };
-        vec3 up = { 0.f, 1.f, 0.f };
-        mat4x4_look_at( view, eye, center, up );
-    }
-    glLoadMatrixf((const GLfloat*) view);
+    glLoadIdentity();
+    gluLookAt(0.0f, 0.0f, 10.0f,    // Eye-position (in front of)
+              0.0f, 0.0f, 0.0f,     // View-point
+              0.0f, 1.0f, 0.0f);   // Up-vector
     drawGrid(0.5, 12);
     drawScene();
 
@@ -284,13 +269,10 @@ static void drawAllViews(void)
     glViewport(width / 2, 0, width / 2, height / 2);
     glScissor(width / 2, 0, width / 2, height / 2);
     glMatrixMode(GL_MODELVIEW);
-    {
-        vec3 eye = { 10.f, 0.f, 0.f };
-        vec3 center = { 0.f, 0.f, 0.f };
-        vec3 up = { 0.f, 1.f, 0.f };
-        mat4x4_look_at( view, eye, center, up );
-    }
-    glLoadMatrixf((const GLfloat*) view);
+    glLoadIdentity();
+    gluLookAt(10.0f, 0.0f, 0.0f,    // Eye-position (to the right)
+              0.0f, 0.0f, 0.0f,     // View-point
+              0.0f, 1.0f, 0.0f);   // Up-vector
     drawGrid(0.5, 12);
     drawScene();
 
@@ -310,23 +292,17 @@ static void drawAllViews(void)
 
     // Setup perspective projection matrix
     glMatrixMode(GL_PROJECTION);
-    mat4x4_perspective(projection,
-                       65.f * (float) M_PI / 180.f,
-                       aspect,
-                       1.f, 50.f);
-    glLoadMatrixf((const GLfloat*) projection);
+    glLoadIdentity();
+    gluPerspective(65.0f, aspect, 1.0f, 50.0f);
 
     // Upper right view (PERSPECTIVE VIEW)
     glViewport(width / 2, height / 2, width / 2, height / 2);
     glScissor(width / 2, height / 2, width / 2, height / 2);
     glMatrixMode(GL_MODELVIEW);
-    {
-        vec3 eye = { 3.f, 1.5f, 3.f };
-        vec3 center = { 0.f, 0.f, 0.f };
-        vec3 up = { 0.f, 1.f, 0.f };
-        mat4x4_look_at( view, eye, center, up );
-    }
-    glLoadMatrixf((const GLfloat*) view);
+    glLoadIdentity();
+    gluLookAt(3.0f, 1.5f, 3.0f,     // Eye-position
+              0.0f, 0.0f, 0.0f,     // View-point
+              0.0f, 1.0f, 0.0f);   // Up-vector
 
     // Configure and enable light source 1
     glLightfv(GL_LIGHT1, GL_POSITION, light_position);
@@ -407,17 +383,6 @@ static void windowRefreshFun(GLFWwindow* window)
 
 static void cursorPosFun(GLFWwindow* window, double x, double y)
 {
-    int wnd_width, wnd_height, fb_width, fb_height;
-    double scale;
-
-    glfwGetWindowSize(window, &wnd_width, &wnd_height);
-    glfwGetFramebufferSize(window, &fb_width, &fb_height);
-
-    scale = (double) fb_width / (double) wnd_width;
-
-    x *= scale;
-    y *= scale;
-
     // Depending on which view was selected, rotate around different axes
     switch (active_view)
     {
@@ -474,7 +439,7 @@ static void mouseButtonFun(GLFWwindow* window, int button, int action, int mods)
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(window, GL_TRUE);
 }
 
 
@@ -492,8 +457,6 @@ int main(void)
         fprintf(stderr, "Failed to initialize GLFW\n");
         exit(EXIT_FAILURE);
     }
-
-    glfwWindowHint(GLFW_SAMPLES, 4);
 
     // Open OpenGL window
     window = glfwCreateWindow(500, 500, "Split view demo", NULL, NULL);
@@ -514,11 +477,7 @@ int main(void)
 
     // Enable vsync
     glfwMakeContextCurrent(window);
-    gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
-
-    if (GLAD_GL_ARB_multisample || GLAD_GL_VERSION_1_3)
-        glEnable(GL_MULTISAMPLE_ARB);
 
     glfwGetFramebufferSize(window, &width, &height);
     framebufferSizeFun(window, width, height);

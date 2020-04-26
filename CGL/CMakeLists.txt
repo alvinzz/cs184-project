@@ -1,9 +1,8 @@
-# Original file Copyright CMU462 Fall 2015: 
+# Original file Copyright CMU462 Fall 2015:
 # Kayvon Fatahalian, Keenan Crane,
 # Sky Gao, Bryce Summers, Michael Choquette.
-cmake_minimum_required(VERSION 3.1)
-
-project(CGL LANGUAGES C CXX VERSION 2020.0)
+cmake_minimum_required(VERSION 2.8)
+project(CGL)
 
 #-------------------------------------------------------------------------------
 # Build options
@@ -14,110 +13,195 @@ option(CGL_BUILD_DOCS     "Build documentation"      OFF)
 option(CGL_BUILD_TESTS    "Build tests programs"     OFF)
 option(CGL_BUILD_EXAMPLES "Build examples"           OFF)
 
-if(BUILD_DEBUG)
-    set(CGL_BUILD_DEBUG ON)
-endif()
-
-if(BUILD_DOCS)
-    set(CGL_BUILD_DOCS ON)
-endif()
+#-------------------------------------------------------------------------------
+# CMake modules
+#-------------------------------------------------------------------------------
+list(APPEND CMAKE_MODULE_PATH "${CGL_SOURCE_DIR}/cmake/modules/")
 
 #-------------------------------------------------------------------------------
-# CMake options
+# CGL paths
 #-------------------------------------------------------------------------------
-if(CGL_BUILD_DEBUG)
-    set(CMAKE_BUILD_TYPE Debug)
-endif()
+set(CGL_INCLUDE_DIRS "${CGL_SOURCE_DIR}/include")
 
 #-------------------------------------------------------------------------------
-# Compiler-specific Options
+# Platform-specific settings
 #-------------------------------------------------------------------------------
 
-include(find_avx.cmake)
-CHECK_FOR_AVX()
+###################
+# Building on OSX #
+###################
+if(APPLE)
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL Clang OR ${CMAKE_CXX_COMPILER_ID} STREQUAL AppleClang)
-    set(CGL_CXX_FLAGS "-std=c++11 -m64")
-    set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -O3")
-endif()
+  # Clang only
+  if(${CMAKE_CXX_COMPILER_ID} STREQUAL "CLANG")
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
-    set(CGL_CXX_FLAGS "-std=c++11 -m64")
-    set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -O3 -fopenmp")
-    if (CGL_BUILD_DEBUG)
-        set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} -ggdb")
+    # OSX Framework dependencies
+    if(NOT CGL_BUILD_SHARED)
+      include_directories( "/System/Library/Frameworks" )
+      find_library (COCOA_LIBRARIES Cocoa)
+      find_library (IOKIT_LIBRARIES IOkit)
+      find_library (COREVIDEO_LIBRARIES CoreVideo)
     endif()
-endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    set(CGL_CXX_FLAGS "/std:c++17 /wd4838 /wd4305 /wd4244 /wd4267")
-    set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} /O2")
-endif()
+    # Clang configuration
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
 
-set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS} ${AVX_FLAGS}")
+      set(CLANG_CXX_FLAGS "-std=c++11 -m64")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CGL_CXX_FLAGS}")
+      if(CGL_BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+      else(CGL_BUILD_DEBUG)
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -O3")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -funroll-loops")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -Wno-narrowing")
+        set(CLANG_CXX_FLAGS "${CLANG_CXX_FLAGS} -Wno-deprecated-register")
+      endif(CGL_BUILD_DEBUG)
 
-#-------------------------------------------------------------------------------
-# Create target: CGL
-#-------------------------------------------------------------------------------
-set(CGL_SOURCE
-    src/vector2D.cpp
-    src/vector3D.cpp
-    src/vector4D.cpp
-    src/matrix3x3.cpp
-    src/matrix4x4.cpp
-    src/quaternion.cpp
-    src/complex.cpp
-    src/color.cpp
-    src/spectrum.cpp
-    src/osdtext.cpp
-    src/osdfont.cpp
-    src/viewer.cpp
-    src/base64.cpp
-    src/lodepng.cpp
-    src/tinyxml2.cpp
-    src/path.cpp
-)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CLANG_CXX_FLAGS}")
 
-add_library(CGL STATIC ${CGL_SOURCE})
+    endif()
 
-set(CGL_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/CGL
-)
-target_include_directories(CGL PUBLIC ${CGL_INCLUDE_DIRS})
+    # GCC configuration
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+
+      set(GCC_CXX_FLAGS "-std=gnu++0x -m64")
+
+      if(CGL_BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+      else(CGL_BUILD_DEBUG)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -O3")
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -fopenmp")
+      endif(CGL_BUILD_DEBUG)
+
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_CXX_FLAGS}")
+
+    endif()
+
+  endif()
+
+endif(APPLE)
+
+##################
+# Build on Linux #
+##################
+set(LINUX UNIX AND NOT APPLE)
+if(LINUX)
+
+  # GCC only
+  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+
+    set(GCC_CXX_FLAGS "-std=gnu++0x -m64")
+
+    # X11 Dependencies
+    if(NOT CGL_BUILD_SHARED)
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXi")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXxf86vm")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXinerama")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXcursor")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXfixes")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXrandr")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXext")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXrender")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lX11")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lpthread")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lxcb")
+      set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -lXau")
+    endif()
+
+    # Debug configuration
+    if(CGL_BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+    else(CGL_BUILD_DEBUG)
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -O3")
+        set(GCC_CXX_FLAGS "${GCC_CXX_FLAGS} -fopenmp")
+    endif(CGL_BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_CXX_FLAGS}")
+
+  endif()
+
+endif(LINUX)
+
+####################
+# Build on Windows #
+####################
+if(WIN32)
+
+  if(MSVC)
+
+    if(CGL_BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+    else(CGL_BUILD_DEBUG)
+      set(MSVC_CXX_FLAGS "/O2")
+    endif(CGL_BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_CXX_FLAGS}")
+
+    add_subdirectory("${CGL_SOURCE_DIR}/deps/freetype")
+
+  endif(MSVC)
+
+  if(MINGW)
+
+    set(MSVC_CXX_FLAGS "-std=c++11")
+
+    if(CGL_BUILD_DEBUG)
+        set(CMAKE_BUILD_TYPE Debug)
+    else(CGL_BUILD_DEBUG)
+    endif(CGL_BUILD_DEBUG)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_CXX_FLAGS}")
+
+  endif(MINGW)
+
+endif(WIN32)
 
 #-------------------------------------------------------------------------------
 # Find dependencies
 #-------------------------------------------------------------------------------
 
-# Threads
-find_package(Threads REQUIRED)
+link_directories(/usr/lib/x86_64-linux-gnu/mesa/)
 
-# OpenGL
-set(OpenGL_GL_PREFERENCE LEGACY)
+# Required packages
 find_package(OpenGL REQUIRED)
+if(NOT WIN32)
+  find_package(Freetype REQUIRED)
+endif()
 
-# Freetype
-find_package(Freetype REQUIRED)
-target_include_directories(CGL PRIVATE ${FREETYPE_INCLUDE_DIRS})
-target_link_libraries(CGL PRIVATE ${FREETYPE_LIBRARIES})
+include_directories( ${OPENGL_INCLUDE_DIRS})
 
-# GLEW
 add_definitions(-DGLEW_STATIC)
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/glew")
-target_include_directories(CGL PUBLIC ${GLEW_INCLUDE_DIRS})
-target_link_libraries(CGL PUBLIC ${GLEW_LIBRARIES})
+add_subdirectory("${CGL_SOURCE_DIR}/deps/glew")
+set_property( TARGET glew APPEND_STRING PROPERTY COMPILE_FLAGS -w )
 
-# GLFW
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/deps/glfw")
-target_link_libraries(CGL PUBLIC glfw)
-target_link_libraries(CGL PUBLIC OpenGL::GL)
+add_subdirectory("${CGL_SOURCE_DIR}/deps/glfw")
+set_property( TARGET glfw APPEND_STRING PROPERTY COMPILE_FLAGS -w )
+
+#-------------------------------------------------------------------------------
+# Set include directories
+#-------------------------------------------------------------------------------
+include_directories(
+  ${CGL_INCLUDE_DIRS}
+  ${GLEW_INCLUDE_DIRS}
+  ${GLFW_INCLUDE_DIRS}
+  ${FREETYPE_INCLUDE_DIRS}
+)
+
+#-------------------------------------------------------------------------------
+# Set link directories
+#-------------------------------------------------------------------------------
+link_directories(
+  ${GLEW_LIBRARY_DIRS}
+  ${GLFW_LIBRARY_DIRS}
+  ${FREETYPE_LIBRARY_DIRS}
+)
 
 #-------------------------------------------------------------------------------
 # Add subdirectories
 #-------------------------------------------------------------------------------
+
+# CGL library source directory
+add_subdirectory(src)
 
 # CGL tests source directory
 if(CGL_BUILD_TESTS)
@@ -143,5 +227,3 @@ endif()
 
 # Install settings
 set(CMAKE_INSTALL_PREFIX "${CGL_SOURCE_DIR}")
-
-set(CGL_CXX_FLAGS "${CGL_CXX_FLAGS}" PARENT_SCOPE)
