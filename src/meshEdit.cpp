@@ -219,6 +219,21 @@ namespace CGL {
     return "Assignment 2: MeshEdit";
   }
 
+  void MeshEdit::blowParticles() {
+    Vector3D source_position = Vector3D(0, 0, 100);
+    Vector3D direction = Vector3D(0, 0, -1);
+    double mass = 0.001;
+    double velocity = 10.;
+    Particle p = Particle(source_position, direction, mass, velocity);
+    for( vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ )
+    {
+      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd; f++) {
+        p.intersect(f);
+      }
+    }
+    p.dentFace();
+  }
+
   void MeshEdit::key_event( char key )
   {
     if(key >= '0' && key <= '9')
@@ -266,6 +281,9 @@ namespace CGL {
       case 'Q':
         smoothShading = !smoothShading;
         break;
+      case 'p':
+      case 'P':
+        blowParticles();
       default:
         break;
     }

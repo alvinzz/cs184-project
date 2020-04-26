@@ -18,7 +18,7 @@ namespace CGL {
 
     if ((b1 >= 0) && (b2 >= 0) && (b0 >= 0) && 
       (b1 <= 1) && (b2 <= 1) && (b0 <= 1) &&
-      t < isect.distance) {
+      (t > 0) && (t < isect.distance)) {
       isect.valid = true;
       isect.face = face;
       isect.distance = t;
