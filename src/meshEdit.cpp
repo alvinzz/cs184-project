@@ -220,7 +220,10 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    Vector3D source_position = Vector3D(0.5, 0.5, 100);
+    Vector3D source_position = Vector3D(
+      2. * rand() / double(RAND_MAX) - 1, 
+      2. * rand() / double(RAND_MAX) - 1, 
+      100);
     Vector3D direction = Vector3D(0, 0, -1);
     double mass = 0.001;
     double velocity = 10.;
@@ -231,7 +234,9 @@ namespace CGL {
         p.intersect(f);
       }
     }
-    p.dentFace();
+    if (p.isect.valid) {
+      p.dentFace();
+    }
   }
 
   void MeshEdit::key_event( char key )
