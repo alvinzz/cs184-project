@@ -28,7 +28,18 @@ namespace CGL {
     return false;
   }
 
-  void Particle::dentFace() {}
+  void Particle::dentFace() {
+      VertexIter v1 = this->isect.face->halfedge()->vertex();
+      VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
+      VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
+
+      double c = 0.1;
+      Vector3D energy = c * 0.5 * this->mass * this->velocity * this->velocity * this->isect.barycentric;
+
+      v1->position = v1->position * (- v1->position.norm() * energy.x);
+      v2->position = v2->position * (- v2->position.norm() * energy.y);
+      v3->position = v3->position * (- v3->position.norm() * energy.z);
+  }
 
   bool Halfedge::isBoundary( void ) const
   // returns true if and only if this halfedge is on the boundary
@@ -475,5 +486,4 @@ namespace CGL {
     {
       *this = mesh;
     }
-
   } // End of CMU 462 namespace.
