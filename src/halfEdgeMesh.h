@@ -196,6 +196,7 @@ namespace CGL
     bool valid;
     FaceIter face;
     double distance;
+    Vector3D barycentric;
   };
 
   class Particle {
