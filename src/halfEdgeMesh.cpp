@@ -39,6 +39,9 @@ namespace CGL {
       v1->position += this->direction * energy.x;
       v2->position += this->direction * energy.y;
       v3->position += this->direction * energy.z;
+      // v1->position = v1->position + (- v1->position.norm() * energy.x);
+      // v2->position = v2->position + (- v2->position.norm() * energy.y);
+      // v3->position = v3->position + (- v3->position.norm() * energy.z);
   }
 
   bool Halfedge::isBoundary( void ) const
