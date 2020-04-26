@@ -29,90 +29,16 @@
 <p>In this project, we will attempt to implement a physics-inspired algorithm for simulating building and statue erosion due to physical or chemical effects. As an example, given a mesh, we could simulate weathering via sandstorms by indenting mesh faces when they are impacted by simulated sand particles. </p>
 <br><br>
 
-<h2 align="middle">Problem Description</h2>
-<p>Weathered buildings and statues have complex geometric shapes that pose a significant challenge for 3D-animators and artists seeking to render realistic scenes (Figure 1). In order to give objects the appearance of age, it appears that animators have previously relied mostly on texture and shading cues (Figure 2). However, adding shape and geometry-based cues could help to convey the impression of age and lead to more effective animations and art. </p>
+<nav>
+  <ul>
+    <li><strong>Home</strong></li>
+    <li><a href="html/proposal.html">Project Proposal</a></li>
+    <li><a href="html/milestone.html">Milestone Report</a></li>
+    <li><a href="html/final.html">Final Report</a></li>
+  </ul>
+</nav>
 
-<div align="middle">
-  <table style="width=100%">
-    <tr>
-      <td>
-        <img src="images/weathered_statue.jpg" align="middle" width="400px"/>
-      </td>
-      <td>
-        <img src="images/weathered_building.jpg" align="middle" width="400px"/>
-      </td>
-    </tr>
-  </table>
-  <figcaption align="middle"> Figure 1. Weathered statues and buildings have complex geometry that are difficult for animators to capture. Source: Wikimedia Commons. </figcaption>
-</div>
 
-<div align="middle">
-  <table style="width=100%">
-    <tr>
-      <td>
-        <img src="images/weathered_walle.jpg" align="middle" width="400px"/>
-      </td>
-    </tr>
-  </table>
-  <figcaption align="middle"> Figure 2. In order to give objects the appearance of age, it appears that animators have previously relied mostly upon texture and shading cues. Source: https://blogs.ubc.ca/angryvietnamese/files/2016/02/wall-e-disneyscreencaps.com-282-1024x429.jpg. </figcaption>
-</div>
-
-<p>The primary challenge in adding these geometric cues to convey age is that they are extremely complex and would be prohibitively time-consuming to do by hand. Therefore, we will attempt to create an automatic system to artificially age or weather a pre-existing mesh or other 3D-model.</p>
-
-<p>Our approach will be inspired by physics if not a physical simulation. To approximate weathering from physical effects, we can simulate collisions between particles and the 3D-object (which could be modelled as a mesh, or using a grid- or particle-based approach). For example, given a mesh, we could simulate weathering via sandstorms by indenting mesh faces when they are impacted by simulated sand particles. On the other hand, to render weathering from chemical effects, we would start by re-implementing ideas from <a href="http://graphics.ucsd.edu/~henrik/papers/weathered_stone/weathered_stone.pdf
-">this paper,</a> since we do not have intuition about weathering from chemical effects. </p>
-
-<h2 align="middle">Goals and Deliverables</h2>
-<h3>Baseline Plan </h3>
-<p>Deliverables:</p>
-<ol type=”1”>
-<li>Simulating particles eroding our mesh using a technique similar to ray tracing</li>
-<ul> 
-<li>Generating distribution of velocities in a sandstorm (inspired by literature)</li>
-<li>Deciding on “threshold” of energy required to make an effect on mesh</li>
-<li>Generating points of contact using ray-tracing from different directions</li>
-    </ul>
-<li>Implementing mesh operation to model effect of one particle</li>
-<ul> 
-<li>Indenting mesh at the point where a particle strikes, depending on energy</li>
-<li>Regularizing mesh when necessary</li>
-</ul>
-<li>Integration & Experiments</li>
-</ol>
-
-<p>We will measure the performance of our simulation by visually comparing the mesh surface to images of existing eroded structures, like the Easter Island statues. It is difficult to quantitatively measure the success of our simulations, so we will rely on qualitative observations of comparisons between the textures of our simulation-eroded objects and reality-eroded objects. </p>
-
-<p>Ultimately, we’d like to see if this simple physics-inspired simulation is a feasible mechanism to generate 3D eroded textures. Otherwise, it will be interesting to see what results this approach produces!</p>
-
-<h3>Aspirational Plan</h3>
-<p>If we have time, we’d like to try to model acid rain erosion as well. We believe this would be significantly more difficult, given that we would have to simulate the path of water flow on the statue and the time spent in any divots before evaporating. We would also have to model how the acid chemically reacts with the stone to produce interesting effects, as in <a href="http://graphics.ucsd.edu/~henrik/papers/weathered_stone/weathered_stone.pdf
-">this paper</a>.</p>
-
-<p>Another stretch goal would include creating a web applet to allow viewers to interactively simulate different conditions. Users could change parameters like wind velocity and duration of erosion and then watch the animation of the statue being worn down.</p>
-
-<p>The last stretch goal would be to use a grid- or particle-based model for the 3D-object (rather than a mesh representation), so that it would be possible to model the object collapsing or pieces breaking off.</p>
-
-<h2 align="middle">Schedule</h2>
-<ul>
-<li>3/31 - 4/9: Project Proposal </li>
-<li>4/9: Project Proposal Due</li>
-<li>4/9 - 4/14: Literature Review</li>
-<li>4/14 - 4/17: Distribution of velocities in a sandstorm & energy threshold</li>
-<li>4/14 - 4/21: Affecting a mesh with one particle (using one of given models)</li>
-<li>4/17 - 4/28: Implementing ray-tracing-inspired approach</li>
-<li>4/25 - 4/28: Project Milestone deliverables </li>
-<li>4/28: Project Milestone Due (1pg website, 1min video, 2-3 slides)</li>
-<li>4/25  - 5/3: Integration and Experiments / Stretch Goals</li>
-<li>5/3 - 5/7: Project Presentation deliverables: assembly of slides, videos, practice</li>
-<li>5/7: Project Presentations (5min)</li>
-<li>5/7 - 5/12: Project Final Deliverables (1-2min video, final report)</li>
-<li>5/12: Final Deliverables (1-2min video, final report)</li>
-</ul>
-
-<h2 align="middle">Resources</h2>
-<p>In terms of existing literature for our project, we were able to find a nice 2008 survey on <a href="https://www.sciencedirect.com/science/article/pii/S0097849308000058"> "Aging and Weathering Phenomena in Computer Graphics"</a>, as well as a 2015 survey on <a href="https://www.sciencedirect.com/science/article/pii/S0097849315000898"> "object deformation and decomposition in computer graphics"</a>. However, at a very brief glance, these methods appear to be more complex than our method.</p>
-
-<p>We plan to implement our method on our personal computers (Windows, Linux, and Mac). We hope to re-use a lot of existing code from Project 3-1: Pathtracing in our project, since generating the sand particles of the sandstorm can be done by slightly modifying the light-source code from that project. </p>
 
 </body>
 </html>
