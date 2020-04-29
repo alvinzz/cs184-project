@@ -53,7 +53,7 @@
     We are using previous codebases from this course to mediate our work. From Project 2, we are modifying the Mesh
     Editor. We want to introduce a property of "hardness" at each point, which will be randomly assigned. Harder
     vertices will require more energy to be affected. If some threshold relationship between energy and hardness is
-    met, the vertex will indent some amount in the direction at which the particle came.
+    met, the vertex will indent some amount in the direction at which the particle came. We have not yet been able to implement hardness yet, but it will be an important part of our project that gives us interesting results. For now, we set all parts of the mesh to have equal hardness.
   </p>
 
   <p>
@@ -62,11 +62,7 @@
     iterators. However, halfEdgeMesh would also have to include the particle class, so this became circular. Ultimately,
     we decided simply to make the Particle class within the halfEdgeMesh.h file. Within this particle mass, we define
     its mass and velocity, which will dictate its energy via the energy equation E = (1/2)*m*v^2. Additionally, the class
-    accounts for the source position of the particle and its direction. We follow this vector until it intersects with
-    the mesh. From there, we calculate the barycentric coordinates to the nearest vertices. Currently, for simplicity
-    and proof-of-concept, we assume no bouncing so that the barycentric field of the class will contain only one set of
-    barycentric coordinates. Ultimately, when we implement nonzero bouncing of the particle, the intersection field will
-    contain a list of barycentric coordinates.
+    accounts for the source position of the particle and its direction. Currently, we generate a random point on a plane in front of the mesh and a random point on a plane behind the mesh which dictates the direction of the ray. We follow this vector until it intersects with the mesh. From there, we calculate the barycentric coordinates to the nearest vertices. Currently, for simplicity and proof-of-concept, we assume no bouncing so that the barycentric field of the class will contain only one set of barycentric coordinates. Ultimately, when we implement nonzero bouncing of the particle, the intersection field will contain a list of barycentric coordinates.
   </p>
 
   <p>
@@ -77,6 +73,31 @@
     barycentric coordinates.
   </p>
 
+  <p> 
+    We find our results to be satisfactory at this stage of the project. For testing, we have been using the cow mesh from class. Below are images of it during various stages of being hammered by particles. 
+  </p>
+  <div align="middle">
+        <table style="width=100%">
+            <tr>
+                <td>
+                    <img src="../images/PIC1.png" align="middle" width="450px" />
+                    <figcaption align="middle">Cow before simulation.  </figcaption>
+                </td>
+                <td>
+                    <img src="../images/PIC2.png" align="middle" width="450px" />
+                    <figcaption align="middle">Cow after 1 timestep </figcaption>
+                </td>
+                <td>
+                    <img src="../images/PIC3.png" align="middle" width="450px" />
+                    <figcaption align="middle">Cow after 20 timesteps </figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+  <p>
+    A summary of our work so far can be found at <a href="https://docs.google.com/presentation/d/1FCI9DfiznfbAqGvNknz7Oj5OnoXDMlA5tS0zdPSAt9o/edit?usp=sharing">these slides here</a>. A video demonstration can also be watched here. 
+  </p>
 </body>
 </html>
 
