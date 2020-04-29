@@ -192,11 +192,44 @@ namespace CGL
    typedef     list<Face>::const_iterator     FaceCIter;
    typedef list<Halfedge>::const_iterator HalfedgeCIter;
 
+  class HardnessMap {
+    public:
+      vector<Vector3D> vectors;
+      double scale;
+      Vector3D start_pos;
+      Vector3D end_pos;
+      int dim_x;
+      int dim_y;
+      int dim_z;
+
+      HardnessMap(Vector3D& start_pos, Vector3D& end_pos, double scale) {
+        this->start_pos = start_pos;
+        this->end_pos = end_pos;
+        this->scale = scale;
+        this->dim_x = (int) floor((end_pos.x - start_pos.x) / scale + 1.);
+        this->dim_y = (int) floor((end_pos.y - start_pos.y) / scale + 1.);
+        this->dim_z = (int) floor((end_pos.z - start_pos.z) / scale + 1.);
+        this->vectors = std::vector<Vector3D>();
+        random_device rd{};
+        mt19937 gen{rd()};
+        normal_distribution<> d{0,1};
+        for (int z = 0; z < dim_z; z++) {
+          for (int y = 0; y < dim_y; y++) {
+            for (int x = 0; x < dim_x; x++) {
+              Vector3D v = Vector3D(d(gen), d(gen), d(gen));
+              vectors.push_back(v.unit());
+            }
+          }
+        }
+      }
+  };
+
   struct Isect {
     bool valid;
     FaceIter face;
     double distance;
     Vector3D barycentric;
+    Vector3D position;
   };
 
   class Particle {
@@ -218,7 +251,7 @@ namespace CGL
       }
 
       bool intersect(FaceIter& face);
-      void dentFace();
+      void dentFace(HardnessMap* hardness_map);
   };
 
   /*
@@ -434,6 +467,8 @@ namespace CGL
 
          Matrix4x4 quadric;
 
+         double area();
+
       protected:
          HalfedgeIter _halfedge; ///< one of the halfedges of this face
          bool _isBoundary;       ///< boundary flag
@@ -521,6 +556,8 @@ namespace CGL
          }
 
         Matrix4x4 quadric;
+
+        double hardness(HardnessMap* hardness_map);
 
       protected:
          HalfedgeIter _halfedge; ///< one of the halfedges "rooted" or "based" at this vertex

@@ -77,6 +77,11 @@ namespace CGL {
     // Initialize styles (colors, line widths, etc.) that will be used
     // to draw different types of mesh elements in various situations.
     initializeStyle();
+
+    Vector3D start = Vector3D(-1, -1, -1);
+    Vector3D end = Vector3D(1, 1, 1);
+    double scale = 0.1;
+    hardness_map = new HardnessMap(start, end, scale);
   }
 
   void MeshEdit::initializeStyle( void )
@@ -220,24 +225,45 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10000; i++) {
       Vector3D source_position = Vector3D(
         2. * rand() / double(RAND_MAX) - 1.,
-        100.,
+        1.,
         2. * rand() / double(RAND_MAX) - 1.
       );
-      Vector3D direction = Vector3D(0, -1, 0);
+      Vector3D target_position = Vector3D(
+        2. * rand() / double(RAND_MAX) - 1.,
+        -1.,
+        2. * rand() / double(RAND_MAX) - 1.
+      );
+      Vector3D direction = (target_position - source_position).unit();
       double mass = 0.001;
       double velocity = 10.;
       Particle p = Particle(source_position, direction, mass, velocity);
-      for( vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ )
-      {
+      for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
         for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
           p.intersect(f);
         }
       }
       if (p.isect.valid) {
-        p.dentFace();
+        p.dentFace(hardness_map);
+        // // bounce once
+        // double BOUNCE_VELOCITY_MULTIPLIER = 0.5;
+        // Vector3D normal = p.isect.face->normal();
+        // if (dot(normal, p.direction) < 0.) {
+        //   normal = -normal;
+        // }
+        // Vector3D projection = dot(normal, p.direction) * normal;
+        // Vector3D bounce_dir = projection + (projection - p.direction);
+        // Particle p2 = Particle(p.isect.position, bounce_dir, mass, BOUNCE_VELOCITY_MULTIPLIER * velocity);
+        // for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++) {
+        //   for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
+        //     p2.intersect(f);
+        //   }
+        // }
+        // if (p2.isect.valid) {
+        //   p2.dentFace(hardness_map);
+        // }
       }
     }
   }
@@ -1049,7 +1075,7 @@ namespace CGL {
 
       Vertex *v = selectedFeature.element->getVertex();
       if (v != NULL) {
-        ostringstream m1, m2, m3, m4, m5, m6, m7, m8;
+        ostringstream m1, m2, m3, m4, m5, m6, m7, m8, m9;
         m1 << "VERTEX DATA";
         m2 << "address      = " << v;
 
@@ -1077,6 +1103,8 @@ namespace CGL {
         m7 << "isBoundary() = " << v->isBoundary();
         m8 << "degree()     = " << v->degree();
 
+        m9 << "hardness()   = " << v->hardness(hardness_map);
+
         drawString(x0, y, m1.str(), size, text_color);
         y += inc;
         drawString(x0, y, m2.str(), size, text_color);
@@ -1094,6 +1122,8 @@ namespace CGL {
         drawString(x0, y, m7.str(), size, text_color);
         y += inc;
         drawString(x0, y, m8.str(), size, text_color);
+        y += inc;
+        drawString(x0, y, m9.str(), size, text_color);
         y += inc;
       }
 

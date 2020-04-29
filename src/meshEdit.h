@@ -197,11 +197,9 @@ namespace CGL {
 
    };// class MeshNode.
 
-
 // The viewer class the manages the viewing and rendering of Collada Files.
 class MeshEdit : public Renderer {
  public:
-
   // --  Inherited public interface functions.
   ~MeshEdit() { }
 
@@ -220,6 +218,7 @@ class MeshEdit : public Renderer {
   void load( Scene* scene );
 
  private:
+  HardnessMap* hardness_map;
 
   void initializeStyle( void );
 
