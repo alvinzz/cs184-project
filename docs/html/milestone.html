@@ -67,7 +67,7 @@
 
   <p>
     We had to also edit meshEdit.cpp from Project 2 so that we can control the simulation. We press 'p' to increment
-    by one timestep, at which point a set of particles is generated. Currently, we are using 100 particles per timestep.
+    by one timestep, at which point a set of particles is generated. Currently, we are using 1000 particles per timestep.
     Each particle is checked to see if it intersects the mesh, and if so, where it intersects. The vertices of the
     intersecting face are displaced in the direction of the particle's motion proportionally to their corresponding
     barycentric coordinates.
@@ -80,16 +80,22 @@
         <table style="width=100%">
             <tr>
                 <td>
-                    <img src="../images/PIC1.png" align="middle" width="450px" />
+                    <img src="../images/cow0.png" align="middle" width="450px" />
                     <figcaption align="middle">Cow before simulation.  </figcaption>
                 </td>
                 <td>
-                    <img src="../images/PIC2.png" align="middle" width="450px" />
+                    <img src="../images/cow1.png" align="middle" width="450px" />
                     <figcaption align="middle">Cow after 1 timestep </figcaption>
                 </td>
+              </tr>
+              <tr>
                 <td>
-                    <img src="../images/PIC3.png" align="middle" width="450px" />
+                    <img src="../images/cow20.png" align="middle" width="450px" />
                     <figcaption align="middle">Cow after 20 timesteps </figcaption>
+                </td>
+                <td>
+                  <img src="../images/cow20_smooth.png" align="middle" width="450px" />
+                  <figcaption align="middle">Cow after 20 timesteps, then subdivided for smoother appearance </figcaption>
                 </td>
             </tr>
         </table>
