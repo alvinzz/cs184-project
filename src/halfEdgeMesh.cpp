@@ -33,12 +33,15 @@ namespace CGL {
       VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
       VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
 
-      double c = 1.0;
+      double c = 0.25;
       Vector3D energy = c * 0.5 * this->mass * this->velocity * this->velocity * this->isect.barycentric;
 
       v1->position += this->direction * energy.x;
       v2->position += this->direction * energy.y;
       v3->position += this->direction * energy.z;
+      // v1->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
+      // v2->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
+      // v3->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
       // v1->position = v1->position + (- v1->position.norm() * energy.x);
       // v2->position = v2->position + (- v2->position.norm() * energy.y);
       // v3->position = v3->position + (- v3->position.norm() * energy.z);

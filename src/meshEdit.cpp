@@ -220,22 +220,25 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    Vector3D source_position = Vector3D(
-      2. * rand() / double(RAND_MAX) - 1, 
-      2. * rand() / double(RAND_MAX) - 1, 
-      100);
-    Vector3D direction = Vector3D(0, 0, -1);
-    double mass = 0.001;
-    double velocity = 10.;
-    Particle p = Particle(source_position, direction, mass, velocity);
-    for( vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ )
-    {
-      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
-        p.intersect(f);
+    for (int i = 0; i < 100; i++) {
+      Vector3D source_position = Vector3D(
+        2. * rand() / double(RAND_MAX) - 1.,
+        100.,
+        2. * rand() / double(RAND_MAX) - 1.
+      );
+      Vector3D direction = Vector3D(0, -1, 0);
+      double mass = 0.001;
+      double velocity = 10.;
+      Particle p = Particle(source_position, direction, mass, velocity);
+      for( vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ )
+      {
+        for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
+          p.intersect(f);
+        }
       }
-    }
-    if (p.isect.valid) {
-      p.dentFace();
+      if (p.isect.valid) {
+        p.dentFace();
+      }
     }
   }
 
