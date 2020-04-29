@@ -78,6 +78,8 @@ namespace CGL {
     // to draw different types of mesh elements in various situations.
     initializeStyle();
 
+    // hardness map stuff
+    use_hardness = false;
     Vector3D start = Vector3D(-1, -1, -1);
     Vector3D end = Vector3D(1, 1, 1);
     double scale = 0.1;
@@ -225,7 +227,7 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       Vector3D source_position = Vector3D(
         2. * rand() / double(RAND_MAX) - 1.,
         1.,
@@ -246,7 +248,11 @@ namespace CGL {
         }
       }
       if (p.isect.valid) {
-        p.dentFace(hardness_map);
+        if (use_hardness) {
+          p.dentFace(hardness_map);
+        } else {
+          p.dentFace();
+        }
         // // bounce once
         // double BOUNCE_VELOCITY_MULTIPLIER = 0.5;
         // Vector3D normal = p.isect.face->normal();
@@ -262,7 +268,11 @@ namespace CGL {
         //   }
         // }
         // if (p2.isect.valid) {
-        //   p2.dentFace(hardness_map);
+        //   if (use_hardness) {
+        //     p2.dentFace(hardness_map);
+        //   } else {
+        //     p2.dentFace();
+        //   }
         // }
       }
     }
@@ -318,6 +328,10 @@ namespace CGL {
       case 'p':
       case 'P':
         blowParticles();
+        break;
+      case 'h':
+      case 'H':
+        use_hardness = !use_hardness;
         break;
       default:
         break;

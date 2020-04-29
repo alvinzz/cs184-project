@@ -219,6 +219,7 @@ class MeshEdit : public Renderer {
 
  private:
   HardnessMap* hardness_map;
+  bool use_hardness;
 
   void initializeStyle( void );
 

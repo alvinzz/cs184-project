@@ -251,6 +251,7 @@ namespace CGL
       }
 
       bool intersect(FaceIter& face);
+      void dentFace();
       void dentFace(HardnessMap* hardness_map);
   };
 

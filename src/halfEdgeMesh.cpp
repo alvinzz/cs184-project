@@ -29,7 +29,7 @@ namespace CGL {
     return false;
   }
 
-  void Particle::dentFace(HardnessMap* hardness_map) {
+  void Particle::dentFace() {
       VertexIter v1 = this->isect.face->halfedge()->vertex();
       VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
       VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
@@ -38,9 +38,9 @@ namespace CGL {
       Vector3D energy = 0.5 * this->mass * this->velocity * this->velocity 
         * this->isect.barycentric / area; 
 
-      Vector3D v1_update = 0.0001*v1->hardness(hardness_map)*this->direction * energy.x;
-      Vector3D v2_update = 0.0001*v2->hardness(hardness_map)*this->direction * energy.y;
-      Vector3D v3_update = 0.0001*v3->hardness(hardness_map)*this->direction * energy.z;
+      Vector3D v1_update = 0.0001*this->direction * energy.x;
+      Vector3D v2_update = 0.0001*this->direction * energy.y;
+      Vector3D v3_update = 0.0001*this->direction * energy.z;
       if (v1_update.norm() > 0.01) {
         v1_update /= (100*v1_update.norm());
       }
@@ -62,6 +62,32 @@ namespace CGL {
       // v1->position = v1->position + (- v1->position.norm() * energy.x);
       // v2->position = v2->position + (- v2->position.norm() * energy.y);
       // v3->position = v3->position + (- v3->position.norm() * energy.z);
+  }
+
+  void Particle::dentFace(HardnessMap* hardness_map) {
+      VertexIter v1 = this->isect.face->halfedge()->vertex();
+      VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
+      VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
+
+      double area = isect.face->area();
+      Vector3D energy = 0.5 * this->mass * this->velocity * this->velocity 
+        * this->isect.barycentric / area; 
+
+      Vector3D v1_update = 1./v1->hardness(hardness_map)*this->direction * energy.x;
+      Vector3D v2_update = 1./v2->hardness(hardness_map)*this->direction * energy.y;
+      Vector3D v3_update = 1./v3->hardness(hardness_map)*this->direction * energy.z;
+      if (v1_update.norm() > 0.01) {
+        v1_update /= (100*v1_update.norm());
+      }
+      if (v2_update.norm() > 0.01) {
+        v2_update /= (100*v2_update.norm());
+      }
+      if (v3_update.norm() > 0.01) {
+        v3_update /= (100*v3_update.norm());
+      }
+      v1->position += v1_update;
+      v2->position += v2_update;
+      v3->position += v3_update;
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {
@@ -101,7 +127,7 @@ namespace CGL {
         * (1.-abs(position.z-corner_pos[i].z)/hardness_map->scale)
         * dot((corner_pos[i]-position)/hardness_map->scale, vectors[i]);
     }
-    return exp(5.*tanh(hardness));
+    return 1000. * exp(2.*(1. + tanh(hardness)));
   }
 
   bool Halfedge::isBoundary( void ) const
