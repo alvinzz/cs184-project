@@ -227,7 +227,7 @@ namespace CGL {
   }
 
   void MeshEdit::blowParticles() {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       Vector3D source_position = Vector3D(
         2. * rand() / double(RAND_MAX) - 1.,
         1.,
@@ -1328,7 +1328,21 @@ namespace CGL {
     }
 
     // Now set draw attributes according to the type of mesh element.
-    if( element->getFace()     ) { setColor( style->faceColor     );                                     return; }
+    if (element->getFace()) {
+      if (use_hardness) {
+        double h1 = element->getFace()->halfedge()->vertex()->hardness(hardness_map);
+        double h2 = element->getFace()->halfedge()->next()->vertex()->hardness(hardness_map);
+        double h3 = element->getFace()->halfedge()->next()->next()->vertex()->hardness(hardness_map);
+        double h = log((h1 + h2 + h3) / 3. / 40000.) / 5.;
+        Color c = Color(max(min(0.5 + h, 1.), 0.), max(min(0.5 - h, 1.), 0.), 0.0);
+        setColor(c);
+        return; 
+      }
+      else {
+        setColor(style->faceColor);
+        return;
+      }
+    }
     if( element->getEdge()     ) { setColor( style->edgeColor     ); glLineWidth( style->strokeWidth  ); return; }
     if( element->getHalfedge() ) { setColor( style->halfedgeColor ); glLineWidth( style->strokeWidth  ); return; }
     if( element->getVertex()   ) { setColor( style->vertexColor   ); glPointSize( style->vertexRadius ); return; }

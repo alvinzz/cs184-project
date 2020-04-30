@@ -127,7 +127,7 @@ namespace CGL {
         * (1.-abs(position.z-corner_pos[i].z)/hardness_map->scale)
         * dot((corner_pos[i]-position)/hardness_map->scale, vectors[i]);
     }
-    return 1000. * exp(2.*(1. + tanh(hardness)));
+    return 40000. * exp(5.*tanh(hardness));
   }
 
   bool Halfedge::isBoundary( void ) const
