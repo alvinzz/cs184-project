@@ -1,4 +1,7 @@
 #include "halfEdgeMesh.h"
+#define MAX_DISPLACEMENT 0.001
+#define SHEAR_HARDNESS_BASE 1
+#define FRONT_HARDNESS_BASE 10
 
 namespace CGL {
   bool Particle::intersect(FaceIter& face) {
@@ -30,60 +33,79 @@ namespace CGL {
   }
 
   void Particle::dentFace() {
-      VertexIter v1 = this->isect.face->halfedge()->vertex();
-      VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
-      VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
+      VertexIter v1 = isect.face->halfedge()->vertex();
+      VertexIter v2 = isect.face->halfedge()->next()->vertex();
+      VertexIter v3 = isect.face->halfedge()->next()->next()->vertex();
 
       double area = isect.face->area();
-      Vector3D energy = 0.5 * this->mass * this->velocity * this->velocity 
-        * this->isect.barycentric / area; 
+      Vector3D energy = 0.5 * mass * velocity * velocity 
+        * isect.barycentric / area; 
 
-      Vector3D v1_update = 0.0001*this->direction * energy.x;
-      Vector3D v2_update = 0.0001*this->direction * energy.y;
-      Vector3D v3_update = 0.0001*this->direction * energy.z;
-      if (v1_update.norm() > 0.01) {
-        v1_update /= (100*v1_update.norm());
+      Vector3D n = isect.face->normal();
+      if (dot(direction, n) < 0) {
+        n = -n;
       }
-      if (v2_update.norm() > 0.01) {
-        v2_update /= (100*v2_update.norm());
+      // two displacements:
+      //  Erosion from shearing off bits and pieces (move normal to face)
+      //  Erosion from head-on collisions denting the rock (move in direction of particle)
+      Vector3D v1_update = energy.x
+        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+      Vector3D v2_update = energy.y
+        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+      Vector3D v3_update = energy.z
+        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+
+      if (v1_update.norm() > MAX_DISPLACEMENT) {
+        v1_update /= (v1_update.norm() / MAX_DISPLACEMENT);
       }
-      if (v3_update.norm() > 0.01) {
-        v3_update /= (100*v3_update.norm());
+      if (v2_update.norm() > MAX_DISPLACEMENT) {
+        v2_update /= (v2_update.norm() / MAX_DISPLACEMENT);
+      }
+      if (v3_update.norm() > MAX_DISPLACEMENT) {
+        v3_update /= (v3_update.norm() / MAX_DISPLACEMENT);
       }
       v1->position += v1_update;
       v2->position += v2_update;
       v3->position += v3_update;
-      // v1->position += this->direction * energy.x;
-      // v2->position += this->direction * energy.y;
-      // v3->position += this->direction * energy.z;
-      // v1->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
-      // v2->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
-      // v3->position += this->direction * c * 0.5 * this->mass * this->velocity * this->velocity;
-      // v1->position = v1->position + (- v1->position.norm() * energy.x);
-      // v2->position = v2->position + (- v2->position.norm() * energy.y);
-      // v3->position = v3->position + (- v3->position.norm() * energy.z);
   }
 
   void Particle::dentFace(HardnessMap* hardness_map) {
-      VertexIter v1 = this->isect.face->halfedge()->vertex();
-      VertexIter v2 = this->isect.face->halfedge()->next()->vertex();
-      VertexIter v3 = this->isect.face->halfedge()->next()->next()->vertex();
+      VertexIter v1 = isect.face->halfedge()->vertex();
+      VertexIter v2 = isect.face->halfedge()->next()->vertex();
+      VertexIter v3 = isect.face->halfedge()->next()->next()->vertex();
 
       double area = isect.face->area();
-      Vector3D energy = 0.5 * this->mass * this->velocity * this->velocity 
-        * this->isect.barycentric / area; 
+      Vector3D energy = 0.5 * mass * velocity * velocity 
+        * isect.barycentric / area; 
 
-      Vector3D v1_update = 1./v1->hardness(hardness_map)*this->direction * energy.x;
-      Vector3D v2_update = 1./v2->hardness(hardness_map)*this->direction * energy.y;
-      Vector3D v3_update = 1./v3->hardness(hardness_map)*this->direction * energy.z;
-      if (v1_update.norm() > 0.01) {
-        v1_update /= (100*v1_update.norm());
+      Vector3D n = isect.face->normal();
+      if (dot(direction, n) < 0) {
+        n = -n;
       }
-      if (v2_update.norm() > 0.01) {
-        v2_update /= (100*v2_update.norm());
+      // two displacements:
+      //  Erosion from shearing off bits and pieces (move normal to face)
+      //  Erosion from head-on collisions denting the rock (move in direction of particle)
+      Vector3D v1_update = energy.x
+        * (sin(acos(dot(direction, n))) / v1->hardness(hardness_map) / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / v1->hardness2(hardness_map) / FRONT_HARDNESS_BASE * direction);
+      Vector3D v2_update = energy.y
+        * (sin(acos(dot(direction, n))) / v2->hardness(hardness_map) / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / v2->hardness2(hardness_map) / FRONT_HARDNESS_BASE * direction);
+      Vector3D v3_update = energy.z
+        * (sin(acos(dot(direction, n))) / v3->hardness(hardness_map) / SHEAR_HARDNESS_BASE * n
+          + dot(direction, n) / v3->hardness2(hardness_map) / FRONT_HARDNESS_BASE * direction);
+
+      if (v1_update.norm() > MAX_DISPLACEMENT) {
+        v1_update /= (v1_update.norm() / MAX_DISPLACEMENT);
       }
-      if (v3_update.norm() > 0.01) {
-        v3_update /= (100*v3_update.norm());
+      if (v2_update.norm() > MAX_DISPLACEMENT) {
+        v2_update /= (v2_update.norm() / MAX_DISPLACEMENT);
+      }
+      if (v3_update.norm() > MAX_DISPLACEMENT) {
+        v3_update /= (v3_update.norm() / MAX_DISPLACEMENT);
       }
       v1->position += v1_update;
       v2->position += v2_update;
@@ -91,43 +113,85 @@ namespace CGL {
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {
-    // get hardness (per-vertex?)
-    int x0 = (int) ((position.x - hardness_map->start_pos.x) / hardness_map->scale);
-    int y0 = (int) ((position.y - hardness_map->start_pos.y) / hardness_map->scale);
-    int z0 = (int) ((position.z - hardness_map->start_pos.z) / hardness_map->scale);
-    int base_idx = z0*hardness_map->dim_y*hardness_map->dim_x + y0*hardness_map->dim_x + x0;
-    vector<Vector3D> vectors = vector<Vector3D>({
-      hardness_map->vectors[base_idx],
-      hardness_map->vectors[base_idx+1],
-      hardness_map->vectors[base_idx+hardness_map->dim_x],
-      hardness_map->vectors[base_idx+hardness_map->dim_x+1],
-      hardness_map->vectors[base_idx+hardness_map->dim_y*hardness_map->dim_x],
-      hardness_map->vectors[base_idx+hardness_map->dim_y*hardness_map->dim_x+1],
-      hardness_map->vectors[base_idx+hardness_map->dim_y*hardness_map->dim_x+hardness_map->dim_x],
-      hardness_map->vectors[base_idx+hardness_map->dim_y*hardness_map->dim_x+hardness_map->dim_x+1]
-    });
-    Vector3D base_pos = hardness_map->start_pos 
-      + Vector3D(1, 0, 0)*hardness_map->scale*x0
-      + Vector3D(0, 1, 0)*hardness_map->scale*y0
-      + Vector3D(0, 0, 1)*hardness_map->scale*z0;
-    vector<Vector3D> corner_pos = vector<Vector3D>({
-      base_pos,
-      base_pos+Vector3D(1, 0, 0)*hardness_map->scale,
-      base_pos+Vector3D(0, 1, 0)*hardness_map->scale,
-      base_pos+Vector3D(1, 1, 0)*hardness_map->scale,
-      base_pos+Vector3D(0, 0, 1)*hardness_map->scale,
-      base_pos+Vector3D(1, 0, 1)*hardness_map->scale,
-      base_pos+Vector3D(0, 1, 1)*hardness_map->scale,
-      base_pos+Vector3D(1, 1, 1)*hardness_map->scale
-    });
     double hardness = 0.;
-    for (int i = 0; i < 8; i++) {
-      hardness += (1.-abs(position.x-corner_pos[i].x)/hardness_map->scale)
-        * (1.-abs(position.y-corner_pos[i].y)/hardness_map->scale)
-        * (1.-abs(position.z-corner_pos[i].z)/hardness_map->scale)
-        * dot((corner_pos[i]-position)/hardness_map->scale, vectors[i]);
+    for (int i = 0; i < hardness_map->depth; i++) {
+      int x0 = (int) ((position.x - hardness_map->start_pos.x) / hardness_map->scale[i]);
+      int y0 = (int) ((position.y - hardness_map->start_pos.y) / hardness_map->scale[i]);
+      int z0 = (int) ((position.z - hardness_map->start_pos.z) / hardness_map->scale[i]);
+      int base_idx = z0*hardness_map->dim_y[i]*hardness_map->dim_x[i] + y0*hardness_map->dim_x[i] + x0;
+      vector<Vector3D> vectors = vector<Vector3D>({
+        hardness_map->vectors[i][base_idx],
+        hardness_map->vectors[i][base_idx+1],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_x[i]],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_x[i]+1],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+1],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+hardness_map->dim_x[i]],
+        hardness_map->vectors[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+hardness_map->dim_x[i]+1]
+      });
+      Vector3D base_pos = hardness_map->start_pos 
+        + Vector3D(1, 0, 0)*hardness_map->scale[i]*x0
+        + Vector3D(0, 1, 0)*hardness_map->scale[i]*y0
+        + Vector3D(0, 0, 1)*hardness_map->scale[i]*z0;
+      vector<Vector3D> corner_pos = vector<Vector3D>({
+        base_pos,
+        base_pos+Vector3D(1, 0, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 1, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 1, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 0, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 0, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 1, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 1, 1)*hardness_map->scale[i]
+      });
+      for (int j = 0; j < 8; j++) {
+        hardness += (1.-abs(position.x-corner_pos[j].x)/hardness_map->scale[i])
+          * (1.-abs(position.y-corner_pos[j].y)/hardness_map->scale[i])
+          * (1.-abs(position.z-corner_pos[j].z)/hardness_map->scale[i])
+          * dot((corner_pos[j]-position)/hardness_map->scale[i], vectors[j]);
+      }
     }
-    return 40000. * exp(5.*tanh(hardness));
+    return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
+  }
+
+  double Vertex::hardness2(HardnessMap* hardness_map) {
+    double hardness = 0.;
+    for (int i = 0; i < hardness_map->depth; i++) {
+      int x0 = (int) ((position.x - hardness_map->start_pos.x) / hardness_map->scale[i]);
+      int y0 = (int) ((position.y - hardness_map->start_pos.y) / hardness_map->scale[i]);
+      int z0 = (int) ((position.z - hardness_map->start_pos.z) / hardness_map->scale[i]);
+      int base_idx = z0*hardness_map->dim_y[i]*hardness_map->dim_x[i] + y0*hardness_map->dim_x[i] + x0;
+      vector<Vector3D> vectors = vector<Vector3D>({
+        hardness_map->vectors2[i][base_idx],
+        hardness_map->vectors2[i][base_idx+1],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_x[i]],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_x[i]+1],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+1],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+hardness_map->dim_x[i]],
+        hardness_map->vectors2[i][base_idx+hardness_map->dim_y[i]*hardness_map->dim_x[i]+hardness_map->dim_x[i]+1]
+      });
+      Vector3D base_pos = hardness_map->start_pos 
+        + Vector3D(1, 0, 0)*hardness_map->scale[i]*x0
+        + Vector3D(0, 1, 0)*hardness_map->scale[i]*y0
+        + Vector3D(0, 0, 1)*hardness_map->scale[i]*z0;
+      vector<Vector3D> corner_pos = vector<Vector3D>({
+        base_pos,
+        base_pos+Vector3D(1, 0, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 1, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 1, 0)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 0, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 0, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(0, 1, 1)*hardness_map->scale[i],
+        base_pos+Vector3D(1, 1, 1)*hardness_map->scale[i]
+      });
+      for (int j = 0; j < 8; j++) {
+        hardness += (1.-abs(position.x-corner_pos[j].x)/hardness_map->scale[i])
+          * (1.-abs(position.y-corner_pos[j].y)/hardness_map->scale[i])
+          * (1.-abs(position.z-corner_pos[j].z)/hardness_map->scale[i])
+          * dot((corner_pos[j]-position)/hardness_map->scale[i], vectors[j]);
+      }
+    }
+    return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
   }
 
   bool Halfedge::isBoundary( void ) const

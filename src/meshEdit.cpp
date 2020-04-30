@@ -82,8 +82,8 @@ namespace CGL {
     use_hardness = false;
     Vector3D start = Vector3D(-1, -1, -1);
     Vector3D end = Vector3D(1, 1, 1);
-    double scale = 0.1;
-    hardness_map = new HardnessMap(start, end, scale);
+    int depth = 8;
+    hardness_map = new HardnessMap(start, end, depth);
   }
 
   void MeshEdit::initializeStyle( void )
@@ -229,14 +229,14 @@ namespace CGL {
   void MeshEdit::blowParticles() {
     for (int i = 0; i < 10000; i++) {
       Vector3D source_position = Vector3D(
-        2. * rand() / double(RAND_MAX) - 1.,
+        4. * (rand() / double(RAND_MAX) - 0.5),
         1.,
-        2. * rand() / double(RAND_MAX) - 1.
+        4. * (rand() / double(RAND_MAX) - 0.5)
       );
       Vector3D target_position = Vector3D(
-        2. * rand() / double(RAND_MAX) - 1.,
+        4. * (rand() / double(RAND_MAX) - 0.5),
         -1.,
-        2. * rand() / double(RAND_MAX) - 1.
+        4. * (rand() / double(RAND_MAX) - 0.5)
       );
       Vector3D direction = (target_position - source_position).unit();
       double mass = 0.001;
@@ -1117,8 +1117,6 @@ namespace CGL {
         m7 << "isBoundary() = " << v->isBoundary();
         m8 << "degree()     = " << v->degree();
 
-        m9 << "hardness()   = " << v->hardness(hardness_map);
-
         drawString(x0, y, m1.str(), size, text_color);
         y += inc;
         drawString(x0, y, m2.str(), size, text_color);
@@ -1137,8 +1135,11 @@ namespace CGL {
         y += inc;
         drawString(x0, y, m8.str(), size, text_color);
         y += inc;
-        drawString(x0, y, m9.str(), size, text_color);
-        y += inc;
+        if (use_hardness) {
+          m9 << "hardness()   = " << v->hardness(hardness_map);
+          drawString(x0, y, m9.str(), size, text_color);
+          y += inc;
+        }
       }
 
       Halfedge *h = selectedFeature.element->getHalfedge();

@@ -194,32 +194,58 @@ namespace CGL
 
   class HardnessMap {
     public:
-      vector<Vector3D> vectors;
-      double scale;
+      int depth;
       Vector3D start_pos;
       Vector3D end_pos;
-      int dim_x;
-      int dim_y;
-      int dim_z;
+      vector<vector<Vector3D>> vectors;
+      vector<vector<Vector3D>> vectors2;
+      vector<int> dim_x;
+      vector<int> dim_y;
+      vector<int> dim_z;
+      vector<double> scale;
 
-      HardnessMap(Vector3D& start_pos, Vector3D& end_pos, double scale) {
+      HardnessMap(Vector3D& start_pos, Vector3D& end_pos, int depth) {
         this->start_pos = start_pos;
         this->end_pos = end_pos;
-        this->scale = scale;
-        this->dim_x = (int) floor((end_pos.x - start_pos.x) / scale + 1.);
-        this->dim_y = (int) floor((end_pos.y - start_pos.y) / scale + 1.);
-        this->dim_z = (int) floor((end_pos.z - start_pos.z) / scale + 1.);
-        this->vectors = std::vector<Vector3D>();
+        this->depth = depth;
+
+        this->scale = vector<double>();
+        this->dim_x = vector<int>();
+        this->dim_y = vector<int>();
+        this->dim_z = vector<int>();
+        this->vectors = vector<vector<Vector3D>>();
+
         random_device rd{};
         mt19937 gen{rd()};
         normal_distribution<> d{0,1};
-        for (int z = 0; z < dim_z; z++) {
-          for (int y = 0; y < dim_y; y++) {
-            for (int x = 0; x < dim_x; x++) {
-              Vector3D v = Vector3D(d(gen), d(gen), d(gen));
-              vectors.push_back(v.unit());
+        for (int i = 0; i < depth; i++) {
+          scale.push_back(max(max(end_pos.x - start_pos.x, end_pos.y - start_pos.y), end_pos.z - start_pos.z) 
+            / pow(2., i));
+          dim_x.push_back(int(floor((end_pos.x - start_pos.x) / scale.back() + 1.)));
+          dim_y.push_back(int(floor((end_pos.y - start_pos.y) / scale.back() + 1.)));
+          dim_z.push_back(int(floor((end_pos.z - start_pos.z) / scale.back() + 1.)));
+
+          vector<Vector3D> vecs = vector<Vector3D>();
+          for (int z = 0; z < dim_z.back(); z++) {
+            for (int y = 0; y < dim_y.back(); y++) {
+              for (int x = 0; x < dim_x.back(); x++) {
+                Vector3D v = Vector3D(d(gen), d(gen), d(gen));
+                vecs.push_back(v.unit());
+              }
             }
           }
+          vectors.push_back(vecs);
+
+          vecs = vector<Vector3D>();
+          for (int z = 0; z < dim_z.back(); z++) {
+            for (int y = 0; y < dim_y.back(); y++) {
+              for (int x = 0; x < dim_x.back(); x++) {
+                Vector3D v = Vector3D(d(gen), d(gen), d(gen));
+                vecs.push_back(v.unit());
+              }
+            }
+          }
+          vectors2.push_back(vecs);
         }
       }
   };
@@ -559,6 +585,7 @@ namespace CGL
         Matrix4x4 quadric;
 
         double hardness(HardnessMap* hardness_map);
+        double hardness2(HardnessMap* hardness_map);
 
       protected:
          HalfedgeIter _halfedge; ///< one of the halfedges "rooted" or "based" at this vertex
