@@ -4,7 +4,229 @@
 #define FRONT_HARDNESS_BASE 10
 
 namespace CGL {
-  bool Particle::intersect(FaceIter& face) {
+  void BBox::draw(Color c, float alpha) {
+
+    glColor4f(c.r, c.g, c.b, alpha);
+
+    // top
+    glBegin(GL_LINE_STRIP);
+    glVertex3d(max.x, max.y, max.z);
+    glVertex3d(max.x, max.y, min.z);
+    glVertex3d(min.x, max.y, min.z);
+    glVertex3d(min.x, max.y, max.z);
+    glVertex3d(max.x, max.y, max.z);
+    glEnd();
+
+    // bottom
+    glBegin(GL_LINE_STRIP);
+    glVertex3d(min.x, min.y, min.z);
+    glVertex3d(min.x, min.y, max.z);
+    glVertex3d(max.x, min.y, max.z);
+    glVertex3d(max.x, min.y, min.z);
+    glVertex3d(min.x, min.y, min.z);
+    glEnd();
+
+    // side
+    glBegin(GL_LINES);
+    glVertex3d(max.x, max.y, max.z);
+    glVertex3d(max.x, min.y, max.z);
+    glVertex3d(max.x, max.y, min.z);
+    glVertex3d(max.x, min.y, min.z);
+    glVertex3d(min.x, max.y, min.z);
+    glVertex3d(min.x, min.y, min.z);
+    glVertex3d(min.x, max.y, max.z);
+    glVertex3d(min.x, min.y, max.z);
+    glEnd();
+
+  }
+
+  bool x_comp(Face* i, Face* j) {
+    BBox b_i = BBox(i);
+    BBox b_j = BBox(j);
+    return b_i.centroid().x < b_j.centroid().x;
+  }
+  bool y_comp(Face* i, Face* j) {
+    BBox b_i = BBox(i);
+    BBox b_j = BBox(j);
+    return b_i.centroid().y < b_j.centroid().y;
+  }
+  bool z_comp(Face* i, Face* j) {
+    BBox b_i = BBox(i);
+    BBox b_j = BBox(j);
+    return b_i.centroid().z < b_j.centroid().z;
+  }
+  double sah(BBox &bbox, int n_primitives) {
+    return bbox.surface_area() * (double)n_primitives;
+  }
+
+  void BBox::expand(Face* face) {
+    Vector3D p1 = face->halfedge()->vertex()->position;
+    Vector3D p2 = face->halfedge()->next()->vertex()->position;
+    Vector3D p3 = face->halfedge()->next()->next()->vertex()->position;
+    min.x = std::min(std::min(std::min(min.x, p1.x), p2.x), p3.x);
+    min.y = std::min(std::min(std::min(min.y, p1.y), p2.y), p3.y);
+    min.z = std::min(std::min(std::min(min.z, p1.z), p2.z), p3.z);
+    max.x = std::max(std::max(std::max(max.x, p1.x), p2.x), p3.x);
+    max.y = std::max(std::max(std::max(max.y, p1.y), p2.y), p3.y);
+    max.z = std::max(std::max(std::max(max.z, p1.z), p2.z), p3.z);
+  }
+
+  BVHNode* BVHTree::construct_bvh(vector<Face*>::iterator start, vector<Face*>::iterator end) {
+    BBox bbox = BBox();
+
+    vector<Face*> faces = vector<Face*>();
+    for (vector<Face*>::iterator f = start; f != end; f++) {
+      bbox.expand(*f);
+      faces.push_back(*f);
+    }
+
+    BVHNode *node = new BVHNode(bbox);
+
+    if (faces.size() <= max_leaf_size) {
+      node->start = start;
+      node->end = end;
+      node->l = NULL;
+      node->r = NULL;
+      for (vector<Face*>::iterator f = start; f != end; f++) {
+        (*f)->bvh_node = node;
+      }
+      return node;
+    }
+
+    std::vector<double> x_costs;
+    std::vector<double> y_costs;
+    std::vector<double> z_costs;
+
+    int N = max(2, min(16, (int)faces.size() / (int)max_leaf_size));
+    int group_size = (int)faces.size() / N;
+
+    std::sort(faces.begin(), faces.end(), x_comp);
+    for (int split_idx = group_size; split_idx < faces.size(); split_idx += group_size) {
+      BBox left_bb;
+      BBox right_bb;
+      for (int i = 0; i < split_idx; i++) {
+        left_bb.expand(faces[i]);
+      }
+      for (int i = split_idx; i < faces.size(); i++) {
+        right_bb.expand(faces[i]);
+      }
+      x_costs.push_back(sah(left_bb, split_idx) + sah(right_bb, faces.size() - split_idx));
+    }
+
+    std::sort(faces.begin(), faces.end(), y_comp);
+    for (int split_idx = group_size; split_idx < faces.size(); split_idx += group_size) {
+      BBox left_bb;
+      BBox right_bb;
+      for (int i = 0; i < split_idx; i++) {
+        left_bb.expand(faces[i]);
+      }
+      for (int i = split_idx; i < faces.size(); i++) {
+        right_bb.expand(faces[i]);
+      }
+      y_costs.push_back(sah(left_bb, split_idx) + sah(right_bb, faces.size() - split_idx));
+    }
+
+    std::sort(faces.begin(), faces.end(), z_comp);
+    for (int split_idx = group_size; split_idx < faces.size(); split_idx += group_size) {
+      BBox left_bb;
+      BBox right_bb;
+      for (int i = 0; i < split_idx; i++) {
+        left_bb.expand(faces[i]);
+      }
+      for (int i = split_idx; i < faces.size(); i++) {
+        right_bb.expand(faces[i]);
+      }
+      z_costs.push_back(sah(left_bb, split_idx) + sah(right_bb, faces.size() - split_idx));
+    }
+
+    double x_min = *min_element(x_costs.begin(), x_costs.end());
+    double y_min = *min_element(y_costs.begin(), y_costs.end());
+    double z_min = *min_element(z_costs.begin(), z_costs.end());
+
+    int split_idx;
+    if ((x_min < y_min) && (x_min < z_min)) {
+      std::sort(faces.begin(), faces.end(), x_comp);
+      int min_idx = min_element(x_costs.begin(), x_costs.end()) - x_costs.begin();
+      split_idx = group_size * (1+min_idx);
+    } else if (y_min < z_min) {
+      std::sort(faces.begin(), faces.end(), y_comp);
+      int min_idx = min_element(y_costs.begin(), y_costs.end()) - y_costs.begin();
+      split_idx = group_size * (1+min_idx);
+    } else {
+      std::sort(faces.begin(), faces.end(), z_comp);
+      int min_idx = min_element(z_costs.begin(), z_costs.end()) - z_costs.begin();
+      split_idx = group_size * (1+min_idx);
+    }
+
+    vector<Face*>::iterator itr = start;
+    for (int i = 0; i < split_idx; i++) {
+      *itr = faces[i];
+      advance(itr, 1);
+    }
+    for (int i = split_idx; i < faces.size(); i++) {
+      *itr = faces[i];
+      advance(itr, 1);
+    }
+    node->l = construct_bvh(start, start + split_idx);
+    node->r = construct_bvh(start + split_idx, end);
+
+    node->l->p = node;
+    node->r->p = node;
+
+    return node;
+  }
+
+  bool Particle::intersect(BVHNode* n) {
+    if (!intersect(n->bb)) {
+      return false;
+    }
+
+    if (n->isLeaf()) {
+      for (vector<Face*>::iterator f = n->start; f != n->end; f++) {
+        intersect(*f);
+      }
+      return isect.valid;
+    }
+
+    intersect(n->l);
+    intersect(n->r);
+    return isect.valid;
+  }
+
+  bool Particle::intersect(BBox& bbox) {
+    double t_x0 = (bbox.min.x - source_position.x) / direction.x;
+    double t_x1 = (bbox.max.x - source_position.x) / direction.x;
+    double t_y0 = (bbox.min.y - source_position.y) / direction.y;
+    double t_y1 = (bbox.max.y - source_position.y) / direction.y;
+    double t_z0 = (bbox.min.z - source_position.z) / direction.z;
+    double t_z1 = (bbox.max.z - source_position.z) / direction.z;
+
+    double t_min_x = std::min(t_x0, t_x1);
+    double t_max_x = std::max(t_x0, t_x1);
+    double t_min_y = std::min(t_y0, t_y1);
+    double t_max_y = std::max(t_y0, t_y1);
+    double t_min_z = std::min(t_z0, t_z1);
+    double t_max_z = std::max(t_z0, t_z1);
+
+    double t_min = std::max(std::max(t_min_x, t_min_y), t_min_z);
+    double t_max = std::min(std::min(t_max_x, t_max_y), t_max_z);
+
+    if (t_min > t_max) {
+      return false;
+    }
+
+    if (t_max < 0) {
+      return false;
+    }
+
+    if (t_min > isect.distance) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool Particle::intersect(Face* face) {
     Vector3D p1 = face->halfedge()->vertex()->position;
     Vector3D p2 = face->halfedge()->next()->vertex()->position;
     Vector3D p3 = face->halfedge()->next()->next()->vertex()->position;
@@ -30,6 +252,29 @@ namespace CGL {
       return true;
     }
     return false;
+  }
+
+  void BVHNode::update_bvh(Vector3D pos) {
+    bool updated_bb = false;
+    if (
+        (bb.min.x != std::min(bb.min.x, pos.x))
+        || (bb.min.y != std::min(bb.min.y, pos.y))
+        || (bb.min.z != std::min(bb.min.z, pos.z))
+        || (bb.max.x != std::max(bb.max.x, pos.x))
+        || (bb.max.y != std::max(bb.max.y, pos.y))
+        || (bb.max.z != std::max(bb.max.z, pos.z))
+    ) {
+      updated_bb = true;
+    }
+    bb.min.x = std::min(bb.min.x, pos.x);
+    bb.min.y = std::min(bb.min.y, pos.y);
+    bb.min.z = std::min(bb.min.z, pos.z);
+    bb.max.x = std::max(bb.max.x, pos.x);
+    bb.max.y = std::max(bb.max.y, pos.y);
+    bb.max.z = std::max(bb.max.z, pos.z);
+    if ((updated_bb) && (p)) {
+      p->update_bvh(pos);
+    }
   }
 
   void Particle::dentFace() {
@@ -70,6 +315,11 @@ namespace CGL {
       v1->position += v1_update;
       v2->position += v2_update;
       v3->position += v3_update;
+
+      // update BVHTree
+      isect.face->bvh_node->update_bvh(v1->position);
+      isect.face->bvh_node->update_bvh(v2->position);
+      isect.face->bvh_node->update_bvh(v3->position);
   }
 
   void Particle::dentFace(HardnessMap* hardness_map) {
@@ -110,6 +360,11 @@ namespace CGL {
       v1->position += v1_update;
       v2->position += v2_update;
       v3->position += v3_update;
+
+      // update BVHTree
+      isect.face->bvh_node->update_bvh(v1->position);
+      isect.face->bvh_node->update_bvh(v2->position);
+      isect.face->bvh_node->update_bvh(v3->position);
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {

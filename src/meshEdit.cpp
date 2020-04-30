@@ -4,6 +4,7 @@
 
 #define PI 3.14159265
 
+#include <stack>
 #include <cmath>
 
 namespace CGL {
@@ -117,14 +118,59 @@ namespace CGL {
 
   void MeshEdit::render()
   {
+    // cout << (bvh_tree->root) << endl;
+    // cout << (*(bvh_tree->root->start))->normal() << endl;
     update_camera();
     draw_meshes();
+    // cout << (*(bvh_tree->root->start))->normal() << endl;
 
     // // Draw the helpful picking messages.
     if (showHUD)
     {
       drawHUD();
     }
+
+    // Visualize BVH
+    // glPushAttrib(GL_ENABLE_BIT);
+    // glDisable(GL_LIGHTING);
+    // glLineWidth(1);
+    // glEnable(GL_DEPTH_TEST);
+
+    // // hardcoded color settings
+    // Color cnode = Color(.5, .5, .5); float cnode_alpha = 0.25f;
+    // Color cnode_hl = Color(1., .25, .0); float cnode_hl_alpha = 0.6f;
+    // Color cnode_hl_child = Color(1., 1., 1.); float cnode_hl_child_alpha = 0.6f;
+
+    // Color cprim_hl_left = Color(.6, .6, 1.); float cprim_hl_left_alpha = 1.f;
+    // Color cprim_hl_right = Color(.8, .8, 1.); float cprim_hl_right_alpha = 1.f;
+    // Color cprim_hl_edges = Color(0., 0., 0.); float cprim_hl_edges_alpha = 0.5f;
+
+    // // render solid geometry (with depth offset)
+    // glPolygonOffset(1.0, 1.0);
+
+    // // keep depth buffer check enabled so that mesh occluded bboxes, but
+    // // disable depth write so that bboxes don't occlude each other.
+    // glDepthMask(GL_FALSE);
+
+    // // create traversal stack
+    // stack<BVHNode *> tstack;
+
+    // // push initial traversal data
+    // tstack.push(bvh_tree->root);
+
+    // // draw all BVH bboxes with non-highlighted color
+    // while (!tstack.empty()) {
+
+    //   BVHNode *current = tstack.top();
+    //   tstack.pop();
+
+    //   current->bb.draw(cnode, cnode_alpha);
+    //   if (current->l) tstack.push(current->l);
+    //   if (current->r) tstack.push(current->r);
+    // }
+
+    // glDepthMask(GL_TRUE);
+    // glPopAttrib();
 
     return;
   }
@@ -242,18 +288,15 @@ namespace CGL {
       double mass = 0.001;
       double velocity = 10.;
       Particle p = Particle(source_position, direction, mass, velocity);
-      for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
-        for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
-          p.intersect(f);
-        }
-      }
+      p.intersect(bvh_tree->root);
+
       if (p.isect.valid) {
         if (use_hardness) {
           p.dentFace(hardness_map);
         } else {
           p.dentFace();
         }
-        // // bounce once
+        // bounce once
         // double BOUNCE_VELOCITY_MULTIPLIER = 0.5;
         // Vector3D normal = p.isect.face->normal();
         // if (dot(normal, p.direction) < 0.) {
@@ -592,6 +635,15 @@ namespace CGL {
     camera_angles = Vector3D(0., 0., 0.);
     view_focus    = centroid;
     up = Z_UP;
+
+    vector<Face*> faces = vector<Face*>();
+    for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
+      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
+        faces.push_back(&(*f));
+      }
+    }
+    int max_leaf_size = 16;
+    this->bvh_tree = new BVHTree(faces, max_leaf_size);
   }
 
   void MeshEdit::init_material (Material& material)
@@ -1038,6 +1090,15 @@ namespace CGL {
 
     resampler.upsample( *mesh );
 
+    vector<Face*> faces = vector<Face*>();
+    for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
+      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
+        faces.push_back(&(*f));
+      }
+    }
+    int max_leaf_size = 16;
+    this->bvh_tree = new BVHTree(faces, max_leaf_size);
+
     // Since the mesh may have changed, the selected and
     // hovered features may no longer point to valid elements.
     selectedFeature.invalidate();
@@ -1135,6 +1196,7 @@ namespace CGL {
         y += inc;
         drawString(x0, y, m8.str(), size, text_color);
         y += inc;
+        y += inc;
         if (use_hardness) {
           m9 << "hardness()   = " << v->hardness(hardness_map);
           drawString(x0, y, m9.str(), size, text_color);
@@ -1200,13 +1262,15 @@ namespace CGL {
 
       Face *f = selectedFeature.element->getFace();
       if (f != NULL) {
-        ostringstream m1, m2, m3, m4, m5;//, m6, m7, m8;
+        ostringstream m1, m2, m3, m4, m5, m6, m7;// m8;
 
         m1 << "FACE DATA";
         m2 << "     address = " << f << endl;
         m3 << "  halfedge() = " << elementAddress(f->halfedge()) << endl;
         m4 << "    degree() = " << f->degree() << endl;
         m5 << "isBoundary() = " << f->isBoundary() << endl;
+        m6 << "BVHNode addr = " << f->bvh_node << endl;
+        m7 << "BVHNode size = " << f->bvh_node->end - f->bvh_node->start << endl;
 
         drawString(x0, y, m1.str(), size, text_color);
         y += inc;
@@ -1218,6 +1282,11 @@ namespace CGL {
         drawString(x0, y, m4.str(), size, text_color);
         y += inc;
         drawString(x0, y, m5.str(), size, text_color);
+        y += inc;
+        y += inc;
+        drawString(x0, y, m6.str(), size, text_color);
+        y += inc;
+        drawString(x0, y, m7.str(), size, text_color);
         y += inc;
 
       }

@@ -217,6 +217,8 @@ class MeshEdit : public Renderer {
 
   void load( Scene* scene );
 
+  BVHTree* bvh_tree;
+
  private:
   HardnessMap* hardness_map;
   bool use_hardness;
@@ -378,8 +380,6 @@ class MeshEdit : public Renderer {
   bool showHUD;
   void drawHUD();
   inline void drawString(float x, float y, string str, size_t size, Color c);
-
-
 
 }; // class MeshEdit
 

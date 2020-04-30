@@ -192,6 +192,81 @@ namespace CGL
    typedef     list<Face>::const_iterator     FaceCIter;
    typedef list<Halfedge>::const_iterator HalfedgeCIter;
 
+  struct BBox {
+    Vector3D max;     ///< min corner of the bounding box
+    Vector3D min;     ///< max corner of the bounding box
+
+    BBox() {
+      this->max = Vector3D( DBL_MIN,  DBL_MIN,  DBL_MIN);
+      this->min = Vector3D( DBL_MAX,  DBL_MAX,  DBL_MAX);
+    }
+
+    BBox(Vector3D& min, Vector3D& max) {
+      this->min = min;
+      this->max = max;
+    }
+
+    BBox(Face* f) {
+      this->max = Vector3D( DBL_MIN,  DBL_MIN,  DBL_MIN);
+      this->min = Vector3D( DBL_MAX,  DBL_MAX,  DBL_MAX);
+      expand(f);
+    }
+
+    /**
+     * Compute the surface area of the bounding box.
+     * \return surface area of the bounding box.
+     */
+    double surface_area() const {
+      return 2 * ((max.x-min.x) * (max.y-min.y) +
+                  (max.y-min.y) * (max.z-min.z) +
+                  (max.z-min.z) * (max.x-min.x));
+    }
+
+    void expand(Face* f);
+
+    Vector3D centroid() {
+      return Vector3D(0.5*(min.x+max.x), 0.5*(min.y+max.y), 0.5*(min.z+max.z));
+    }
+
+    void draw(Color c, float alpha);
+  };
+
+  struct BVHNode {
+    BVHNode(BBox bb): bb(bb), l(NULL), r(NULL), p(NULL) { }
+
+    ~BVHNode() {
+      if (l) delete l;
+      if (r) delete r;
+    }
+
+    inline bool isLeaf() const { return l == NULL && r == NULL; }
+
+    BBox bb;        ///< bounding box of the node
+    BVHNode* l;     ///< left child node
+    BVHNode* r;     ///< right child node
+    BVHNode* p;     ///< parent node
+
+    vector<Face*>::iterator start;
+    vector<Face*>::iterator end;
+
+    void update_bvh(Vector3D pos);
+  };
+
+  class BVHTree {
+    public:
+      BVHNode* root;
+      vector<Face*> faces;
+      int max_leaf_size;
+
+      BVHTree(vector<Face*>& faces, int max_leaf_size) {
+        this->faces = vector<Face*>(faces);
+        this->max_leaf_size = max_leaf_size;
+        this->root = construct_bvh(this->faces.begin(), this->faces.end());
+      }
+
+      BVHNode* construct_bvh(vector<Face*>::iterator start, vector<Face*>::iterator end);
+  };
+
   class HardnessMap {
     public:
       int depth;
@@ -252,7 +327,7 @@ namespace CGL
 
   struct Isect {
     bool valid;
-    FaceIter face;
+    Face* face;
     double distance;
     Vector3D barycentric;
     Vector3D position;
@@ -276,7 +351,9 @@ namespace CGL
         this->isect.distance = DBL_MAX;
       }
 
-      bool intersect(FaceIter& face);
+      bool intersect(Face* f);
+      bool intersect(BBox& b);
+      bool intersect(BVHNode* n);
       void dentFace();
       void dentFace(HardnessMap* hardness_map);
   };
@@ -495,6 +572,8 @@ namespace CGL
          Matrix4x4 quadric;
 
          double area();
+
+         BVHNode* bvh_node;
 
       protected:
          HalfedgeIter _halfedge; ///< one of the halfedges of this face
