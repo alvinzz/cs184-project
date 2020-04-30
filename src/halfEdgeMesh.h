@@ -206,7 +206,7 @@ namespace CGL
       this->max = max;
     }
 
-    BBox(Face* f) {
+    BBox(FaceIter& f) {
       this->max = Vector3D( DBL_MIN,  DBL_MIN,  DBL_MIN);
       this->min = Vector3D( DBL_MAX,  DBL_MAX,  DBL_MAX);
       expand(f);
@@ -222,7 +222,7 @@ namespace CGL
                   (max.z-min.z) * (max.x-min.x));
     }
 
-    void expand(Face* f);
+    void expand(FaceIter& f);
 
     Vector3D centroid() {
       return Vector3D(0.5*(min.x+max.x), 0.5*(min.y+max.y), 0.5*(min.z+max.z));
@@ -246,8 +246,8 @@ namespace CGL
     BVHNode* r;     ///< right child node
     BVHNode* p;     ///< parent node
 
-    vector<Face*>::iterator start;
-    vector<Face*>::iterator end;
+    vector<FaceIter>::iterator start;
+    vector<FaceIter>::iterator end;
 
     void update_bvh(Vector3D pos);
   };
@@ -255,16 +255,16 @@ namespace CGL
   class BVHTree {
     public:
       BVHNode* root;
-      vector<Face*> faces;
+      vector<FaceIter> faces;
       int max_leaf_size;
 
-      BVHTree(vector<Face*>& faces, int max_leaf_size) {
-        this->faces = vector<Face*>(faces);
+      BVHTree(vector<FaceIter>& faces, int max_leaf_size) {
+        this->faces = vector<FaceIter>(faces);
         this->max_leaf_size = max_leaf_size;
         this->root = construct_bvh(this->faces.begin(), this->faces.end());
       }
 
-      BVHNode* construct_bvh(vector<Face*>::iterator start, vector<Face*>::iterator end);
+      BVHNode* construct_bvh(vector<FaceIter>::iterator start, vector<FaceIter>::iterator end);
   };
 
   class HardnessMap {
@@ -327,7 +327,7 @@ namespace CGL
 
   struct Isect {
     bool valid;
-    Face* face;
+    FaceIter face;
     double distance;
     Vector3D barycentric;
     Vector3D position;
@@ -351,7 +351,7 @@ namespace CGL
         this->isect.distance = DBL_MAX;
       }
 
-      bool intersect(Face* f);
+      bool intersect(FaceIter& f);
       bool intersect(BBox& b);
       bool intersect(BVHNode* n);
       void dentFace();

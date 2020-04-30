@@ -40,17 +40,17 @@ namespace CGL {
 
   }
 
-  bool x_comp(Face* i, Face* j) {
+  bool x_comp(FaceIter& i, FaceIter& j) {
     BBox b_i = BBox(i);
     BBox b_j = BBox(j);
     return b_i.centroid().x < b_j.centroid().x;
   }
-  bool y_comp(Face* i, Face* j) {
+  bool y_comp(FaceIter& i, FaceIter& j) {
     BBox b_i = BBox(i);
     BBox b_j = BBox(j);
     return b_i.centroid().y < b_j.centroid().y;
   }
-  bool z_comp(Face* i, Face* j) {
+  bool z_comp(FaceIter& i, FaceIter& j) {
     BBox b_i = BBox(i);
     BBox b_j = BBox(j);
     return b_i.centroid().z < b_j.centroid().z;
@@ -59,7 +59,7 @@ namespace CGL {
     return bbox.surface_area() * (double)n_primitives;
   }
 
-  void BBox::expand(Face* face) {
+  void BBox::expand(FaceIter& face) {
     Vector3D p1 = face->halfedge()->vertex()->position;
     Vector3D p2 = face->halfedge()->next()->vertex()->position;
     Vector3D p3 = face->halfedge()->next()->next()->vertex()->position;
@@ -71,11 +71,11 @@ namespace CGL {
     max.z = std::max(std::max(std::max(max.z, p1.z), p2.z), p3.z);
   }
 
-  BVHNode* BVHTree::construct_bvh(vector<Face*>::iterator start, vector<Face*>::iterator end) {
+  BVHNode* BVHTree::construct_bvh(vector<FaceIter>::iterator start, vector<FaceIter>::iterator end) {
     BBox bbox = BBox();
 
-    vector<Face*> faces = vector<Face*>();
-    for (vector<Face*>::iterator f = start; f != end; f++) {
+    vector<FaceIter> faces = vector<FaceIter>();
+    for (vector<FaceIter>::iterator f = start; f != end; f++) {
       bbox.expand(*f);
       faces.push_back(*f);
     }
@@ -87,7 +87,7 @@ namespace CGL {
       node->end = end;
       node->l = NULL;
       node->r = NULL;
-      for (vector<Face*>::iterator f = start; f != end; f++) {
+      for (vector<FaceIter>::iterator f = start; f != end; f++) {
         (*f)->bvh_node = node;
       }
       return node;
@@ -158,7 +158,7 @@ namespace CGL {
       split_idx = group_size * (1+min_idx);
     }
 
-    vector<Face*>::iterator itr = start;
+    vector<FaceIter>::iterator itr = start;
     for (int i = 0; i < split_idx; i++) {
       *itr = faces[i];
       advance(itr, 1);
@@ -182,7 +182,7 @@ namespace CGL {
     }
 
     if (n->isLeaf()) {
-      for (vector<Face*>::iterator f = n->start; f != n->end; f++) {
+      for (vector<FaceIter>::iterator f = n->start; f != n->end; f++) {
         intersect(*f);
       }
       return isect.valid;
@@ -226,7 +226,7 @@ namespace CGL {
     return true;
   }
 
-  bool Particle::intersect(Face* face) {
+  bool Particle::intersect(FaceIter& face) {
     Vector3D p1 = face->halfedge()->vertex()->position;
     Vector3D p2 = face->halfedge()->next()->vertex()->position;
     Vector3D p3 = face->halfedge()->next()->next()->vertex()->position;
@@ -317,9 +317,21 @@ namespace CGL {
       v3->position += v3_update;
 
       // update BVHTree
-      isect.face->bvh_node->update_bvh(v1->position);
-      isect.face->bvh_node->update_bvh(v2->position);
-      isect.face->bvh_node->update_bvh(v3->position);
+      HalfedgeIter h = v1->halfedge();
+      for (int i = 0; i < v1->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v1->position);
+        h = h->twin()->next();
+      }
+      h = v2->halfedge();
+      for (int i = 0; i < v2->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v2->position);
+        h = h->twin()->next();
+      }
+      h = v3->halfedge();
+      for (int i = 0; i < v3->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v3->position);
+        h = h->twin()->next();
+      }
   }
 
   void Particle::dentFace(HardnessMap* hardness_map) {
@@ -362,9 +374,21 @@ namespace CGL {
       v3->position += v3_update;
 
       // update BVHTree
-      isect.face->bvh_node->update_bvh(v1->position);
-      isect.face->bvh_node->update_bvh(v2->position);
-      isect.face->bvh_node->update_bvh(v3->position);
+      HalfedgeIter h = v1->halfedge();
+      for (int i = 0; i < v1->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v1->position);
+        h = h->twin()->next();
+      }
+      h = v2->halfedge();
+      for (int i = 0; i < v2->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v2->position);
+        h = h->twin()->next();
+      }
+      h = v3->halfedge();
+      for (int i = 0; i < v3->degree(); i++) {
+        h->face()->bvh_node->update_bvh(v3->position);
+        h = h->twin()->next();
+      }
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {

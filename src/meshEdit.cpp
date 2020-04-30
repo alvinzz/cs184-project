@@ -118,11 +118,8 @@ namespace CGL {
 
   void MeshEdit::render()
   {
-    // cout << (bvh_tree->root) << endl;
-    // cout << (*(bvh_tree->root->start))->normal() << endl;
     update_camera();
     draw_meshes();
-    // cout << (*(bvh_tree->root->start))->normal() << endl;
 
     // // Draw the helpful picking messages.
     if (showHUD)
@@ -636,10 +633,10 @@ namespace CGL {
     view_focus    = centroid;
     up = Z_UP;
 
-    vector<Face*> faces = vector<Face*>();
+    vector<FaceIter> faces = vector<FaceIter>();
     for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
       for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
-        faces.push_back(&(*f));
+        faces.push_back(f);
       }
     }
     int max_leaf_size = 16;
@@ -1069,7 +1066,15 @@ namespace CGL {
 
     position = pos.to3D();
 
-
+    free(this->bvh_tree);
+    vector<FaceIter> faces = vector<FaceIter>();
+    for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
+      for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
+        faces.push_back(f);
+      }
+    }
+    int max_leaf_size = 16;
+    this->bvh_tree = new BVHTree(faces, max_leaf_size);
   }
 
   // -- Geometric Operations
@@ -1090,10 +1095,11 @@ namespace CGL {
 
     resampler.upsample( *mesh );
 
-    vector<Face*> faces = vector<Face*>();
+    free(this->bvh_tree);
+    vector<FaceIter> faces = vector<FaceIter>();
     for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++ ) {
       for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
-        faces.push_back(&(*f));
+        faces.push_back(f);
       }
     }
     int max_leaf_size = 16;
