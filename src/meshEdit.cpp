@@ -83,7 +83,7 @@ namespace CGL {
     use_hardness = false;
     Vector3D start = Vector3D(-1, -1, -1);
     Vector3D end = Vector3D(1, 1, 1);
-    int min_depth = 3;
+    int min_depth = 0;
     int max_depth = 8;
     hardness_map = new HardnessMap(start, end, min_depth, max_depth);
   }
@@ -1427,12 +1427,14 @@ namespace CGL {
         glNormal3dv( &normal.x );
         if (use_hardness) {
           double hardness = h->vertex()->hardness(hardness_map);
-          double c = sqrt(2500. / hardness);
+          // double c = sqrt(2500. / hardness);
+          double c = 100000. / hardness / 5.;
           if (!shadingMode) {
-            glColor3d(max(min(1 - 2*c, 1.), 0.), max(min(2*c, 1.), 0.), 0.0);
+            glColor3d(1.-c, c, 0.0);
           } else {
-            // glColor3d(0.9-1.2*c, 0.9-1.2*c, 0.9-1.2*c);
-            glColor3d(pow(c, 0.125), pow(c, 0.125), pow(c, 0.125));
+            c = pow(hardness / 200000., 0.5);
+            glColor3d(min(0.9, 1.2*c), min(0.9, 1.2*c), min(0.9, 1.2*c)); // granite
+            // glColor3d(0.9, 0.9, 0.9); // marble
           }
         }
         // Draw this vertex.

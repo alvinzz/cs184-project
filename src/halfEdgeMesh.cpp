@@ -508,7 +508,8 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    // return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
 
   }
 
@@ -555,7 +556,8 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    // return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
   }
 
   bool Halfedge::isBoundary( void ) const
