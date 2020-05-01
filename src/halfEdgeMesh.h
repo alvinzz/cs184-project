@@ -201,7 +201,7 @@ namespace CGL
       this->min = Vector3D( DBL_MAX,  DBL_MAX,  DBL_MAX);
     }
 
-    BBox(Vector3D& min, Vector3D& max) {
+    BBox(Vector3D min, Vector3D max) {
       this->min = min;
       this->max = max;
     }
@@ -269,7 +269,8 @@ namespace CGL
 
   class HardnessMap {
     public:
-      int depth;
+      int min_depth;
+      int max_depth;
       Vector3D start_pos;
       Vector3D end_pos;
       vector<vector<Vector3D>> vectors;
@@ -279,10 +280,11 @@ namespace CGL
       vector<int> dim_z;
       vector<double> scale;
 
-      HardnessMap(Vector3D& start_pos, Vector3D& end_pos, int depth) {
+      HardnessMap(Vector3D start_pos, Vector3D end_pos, int min_depth, int max_depth) {
         this->start_pos = start_pos;
         this->end_pos = end_pos;
-        this->depth = depth;
+        this->min_depth = min_depth;
+        this->max_depth = max_depth;
 
         this->scale = vector<double>();
         this->dim_x = vector<int>();
@@ -293,7 +295,7 @@ namespace CGL
         random_device rd{};
         mt19937 gen{rd()};
         normal_distribution<> d{0,1};
-        for (int i = 0; i < depth; i++) {
+        for (int i = min_depth; i < max_depth; i++) {
           scale.push_back(max(max(end_pos.x - start_pos.x, end_pos.y - start_pos.y), end_pos.z - start_pos.z) 
             / pow(2., i));
           dim_x.push_back(int(floor((end_pos.x - start_pos.x) / scale.back() + 1.)));
@@ -341,7 +343,17 @@ namespace CGL
       Vector3D source_position;
       Isect isect;
 
-      Particle(Vector3D& source_position, Vector3D& direction, double mass, double velocity) {
+      Particle() {
+        this->source_position = Vector3D(0, 0, 0);
+        this->direction = Vector3D(0, 0, 0);
+        this->mass = 0.;
+        this->velocity = 0.;
+        this->isect = Isect();
+        this->isect.valid = false;
+        this->isect.distance = DBL_MAX;
+      }
+
+      Particle(Vector3D source_position, Vector3D direction, double mass, double velocity) {
         this->source_position = source_position;
         this->direction = direction;
         this->mass = mass;
@@ -355,7 +367,7 @@ namespace CGL
       bool intersect(BBox& b);
       bool intersect(BVHNode* n);
       void dentFace();
-      void dentFace(HardnessMap* hardness_map);
+      void dentFace(HardnessMap* hardness_map, BVHTree* bvh_tree);
   };
 
   /*

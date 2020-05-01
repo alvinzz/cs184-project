@@ -2,6 +2,9 @@
 #define MAX_DISPLACEMENT 0.001
 #define SHEAR_HARDNESS_BASE 1
 #define FRONT_HARDNESS_BASE 25
+#define EPS_D 0.00000000001
+#define PI 3.14159265359
+#define CREASE_THRESH PI / 2.
 
 namespace CGL {
   void BBox::draw(Color c, float alpha) {
@@ -277,6 +280,43 @@ namespace CGL {
     }
   }
 
+  void correct_crease(FaceIter& f1, FaceIter& f2, VertexIter& v1, VertexIter& v2) {
+    // face normals always point out/into the mesh due to CCW winding constraint 
+    Vector3D n1 = f1->normal();
+    Vector3D n2 = f2->normal();
+
+    double angle_init = acos(dot(n1, n2));
+    if (angle_init > CREASE_THRESH) {
+      v1->position += MAX_DISPLACEMENT * (n1 + n2).unit();
+      v2->position += MAX_DISPLACEMENT * (n1 + n2).unit();
+      double new_angle = acos(dot(f1->normal(), f2->normal()));
+      if (new_angle < angle_init) {
+        int ctr = 0;
+        while ((new_angle > CREASE_THRESH) && (ctr < 10)) {
+          n1 = f1->normal();
+          n2 = f2->normal();
+          v1->position += MAX_DISPLACEMENT * (n1 + n2).unit();
+          v2->position += MAX_DISPLACEMENT * (n1 + n2).unit();
+          new_angle = acos(dot(f1->normal(), f2->normal()));
+          ctr++;
+        }
+      } else {
+        v1->position -= MAX_DISPLACEMENT * (n1 + n2).unit();
+        v2->position -= MAX_DISPLACEMENT * (n1 + n2).unit();
+        new_angle = acos(dot(f1->normal(), f2->normal()));
+        int ctr = 0;
+        while ((new_angle > CREASE_THRESH) && (ctr < 10)) {
+          n1 = f1->normal();
+          n2 = f2->normal();
+          v1->position -= MAX_DISPLACEMENT * (n1 + n2).unit();
+          v2->position -= MAX_DISPLACEMENT * (n1 + n2).unit();
+          new_angle = acos(dot(f1->normal(), f2->normal()));
+          ctr++;
+        }
+      }
+    }
+  }
+
   void Particle::dentFace() {
       VertexIter v1 = isect.face->halfedge()->vertex();
       VertexIter v2 = isect.face->halfedge()->next()->vertex();
@@ -317,24 +357,31 @@ namespace CGL {
       v3->position += v3_update;
 
       // update BVHTree
-      HalfedgeIter h = v1->halfedge();
+      HalfedgeIter h;
+      h = v1->halfedge();
       for (int i = 0; i < v1->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v1->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v1->position);
+          h = h->twin()->next();
+        }
       }
       h = v2->halfedge();
       for (int i = 0; i < v2->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v2->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v2->position);
+          h = h->twin()->next();
+        }
       }
       h = v3->halfedge();
       for (int i = 0; i < v3->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v3->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v3->position);
+          h = h->twin()->next();
+        }
       }
   }
 
-  void Particle::dentFace(HardnessMap* hardness_map) {
+  void Particle::dentFace(HardnessMap* hardness_map, BVHTree* bvh_tree) {
       VertexIter v1 = isect.face->halfedge()->vertex();
       VertexIter v2 = isect.face->halfedge()->next()->vertex();
       VertexIter v3 = isect.face->halfedge()->next()->next()->vertex();
@@ -374,29 +421,59 @@ namespace CGL {
       v3->position += v3_update;
 
       // update BVHTree
-      HalfedgeIter h = v1->halfedge();
+      HalfedgeIter h;
+      h = v1->halfedge();
       for (int i = 0; i < v1->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v1->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v1->position);
+          h = h->twin()->next();
+        }
       }
       h = v2->halfedge();
       for (int i = 0; i < v2->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v2->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v2->position);
+          h = h->twin()->next();
+        }
       }
       h = v3->halfedge();
       for (int i = 0; i < v3->degree(); i++) {
-        h->face()->bvh_node->update_bvh(v3->position);
-        h = h->twin()->next();
+        if (!h->isBoundary()) {
+          h->face()->bvh_node->update_bvh(v3->position);
+          h = h->twin()->next();
+        }
       }
+
+      // correct creases
+      correct_crease(
+        isect.face,
+        isect.face->halfedge()->twin()->face(),
+        isect.face->halfedge()->vertex(),
+        isect.face->halfedge()->next()->vertex()
+      );
+      correct_crease(
+        isect.face,
+        isect.face->halfedge()->next()->twin()->face(),
+        isect.face->halfedge()->next()->vertex(),
+        isect.face->halfedge()->next()->next()->vertex()
+      );
+      correct_crease(
+        isect.face,
+        isect.face->halfedge()->next()->next()->twin()->face(),
+        isect.face->halfedge()->next()->next()->vertex(),
+        isect.face->halfedge()->vertex()
+      );
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {
     double hardness = 0.;
-    for (int i = 0; i < hardness_map->depth; i++) {
+    for (int i = 0; i < hardness_map->max_depth-hardness_map->min_depth; i++) {
       int x0 = (int) ((position.x - hardness_map->start_pos.x) / hardness_map->scale[i]);
       int y0 = (int) ((position.y - hardness_map->start_pos.y) / hardness_map->scale[i]);
       int z0 = (int) ((position.z - hardness_map->start_pos.z) / hardness_map->scale[i]);
+      x0 = std::max(std::min(x0, hardness_map->dim_x[i]-2), 0);
+      y0 = std::max(std::min(y0, hardness_map->dim_y[i]-2), 0);
+      z0 = std::max(std::min(z0, hardness_map->dim_z[i]-2), 0);
       int base_idx = z0*hardness_map->dim_y[i]*hardness_map->dim_x[i] + y0*hardness_map->dim_x[i] + x0;
       vector<Vector3D> vectors = vector<Vector3D>({
         hardness_map->vectors[i][base_idx],
@@ -431,16 +508,19 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    return 2500. / pow(abs(tanh(hardness / sqrt(double(hardness_map->depth)))), 2.);
+    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
 
   }
 
   double Vertex::hardness2(HardnessMap* hardness_map) {
     double hardness = 0.;
-    for (int i = 0; i < hardness_map->depth; i++) {
+    for (int i = 0; i < hardness_map->max_depth-hardness_map->min_depth; i++) {
       int x0 = (int) ((position.x - hardness_map->start_pos.x) / hardness_map->scale[i]);
       int y0 = (int) ((position.y - hardness_map->start_pos.y) / hardness_map->scale[i]);
       int z0 = (int) ((position.z - hardness_map->start_pos.z) / hardness_map->scale[i]);
+      x0 = std::max(std::min(x0, hardness_map->dim_x[i]-2), 0);
+      y0 = std::max(std::min(y0, hardness_map->dim_y[i]-2), 0);
+      z0 = std::max(std::min(z0, hardness_map->dim_z[i]-2), 0);
       int base_idx = z0*hardness_map->dim_y[i]*hardness_map->dim_x[i] + y0*hardness_map->dim_x[i] + x0;
       vector<Vector3D> vectors = vector<Vector3D>({
         hardness_map->vectors2[i][base_idx],
@@ -475,7 +555,7 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    return 2500. / pow(abs(tanh(hardness / sqrt(double(hardness_map->depth)))), 2.);
+    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
   }
 
   bool Halfedge::isBoundary( void ) const

@@ -83,8 +83,9 @@ namespace CGL {
     use_hardness = false;
     Vector3D start = Vector3D(-1, -1, -1);
     Vector3D end = Vector3D(1, 1, 1);
-    int depth = 8;
-    hardness_map = new HardnessMap(start, end, depth);
+    int min_depth = 3;
+    int max_depth = 8;
+    hardness_map = new HardnessMap(start, end, min_depth, max_depth);
   }
 
   void MeshEdit::initializeStyle( void )
@@ -289,7 +290,7 @@ namespace CGL {
 
       if (p.isect.valid) {
         if (use_hardness) {
-          p.dentFace(hardness_map);
+          p.dentFace(hardness_map, bvh_tree);
         } else {
           p.dentFace();
         }
