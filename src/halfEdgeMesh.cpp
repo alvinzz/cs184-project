@@ -1,7 +1,7 @@
 #include "halfEdgeMesh.h"
 #define MAX_DISPLACEMENT 0.001
 #define SHEAR_HARDNESS_BASE 1
-#define FRONT_HARDNESS_BASE 10
+#define FRONT_HARDNESS_BASE 25
 
 namespace CGL {
   void BBox::draw(Color c, float alpha) {
@@ -429,7 +429,10 @@ namespace CGL {
           * dot((corner_pos[j]-position)/hardness_map->scale[i], vectors[j]);
       }
     }
-    return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
+    // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
+    // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
+    return 2500. / pow(abs(tanh(hardness / sqrt(double(hardness_map->depth)))), 2.);
+
   }
 
   double Vertex::hardness2(HardnessMap* hardness_map) {
@@ -470,7 +473,9 @@ namespace CGL {
           * dot((corner_pos[j]-position)/hardness_map->scale[i], vectors[j]);
       }
     }
-    return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
+    // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
+    // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
+    return 2500. / pow(abs(tanh(hardness / sqrt(double(hardness_map->depth)))), 2.);
   }
 
   bool Halfedge::isBoundary( void ) const

@@ -2,6 +2,7 @@ uniform int outputID;
 uniform vec3 eyePos;
 varying vec3 normal;
 varying vec3 vertex;
+varying vec3 color;
 
 #define PI 3.1415926
 
@@ -36,7 +37,8 @@ vec3 shadeDiffuseFromEye()
     vec3 n = normalize(normal);
     vec3 out_vec = normalize(eyePos - vertex);
     float diffuse = abs(dot(out_vec, n));
-    return vec3(diffuse);
+    //return diffuse * color;
+    return vec3d(diffuse);
 }
 
 vec3 shadePhong(vec3 lightPos)

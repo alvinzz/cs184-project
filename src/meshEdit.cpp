@@ -293,27 +293,6 @@ namespace CGL {
         } else {
           p.dentFace();
         }
-        // bounce once
-        // double BOUNCE_VELOCITY_MULTIPLIER = 0.5;
-        // Vector3D normal = p.isect.face->normal();
-        // if (dot(normal, p.direction) < 0.) {
-        //   normal = -normal;
-        // }
-        // Vector3D projection = dot(normal, p.direction) * normal;
-        // Vector3D bounce_dir = projection + (projection - p.direction);
-        // Particle p2 = Particle(p.isect.position, bounce_dir, mass, BOUNCE_VELOCITY_MULTIPLIER * velocity);
-        // for (vector<MeshNode>::iterator n = meshNodes.begin(); n != meshNodes.end(); n++) {
-        //   for (FaceIter f = n->mesh.facesBegin(); f != n->mesh.facesEnd(); f++) {
-        //     p2.intersect(f);
-        //   }
-        // }
-        // if (p2.isect.valid) {
-        //   if (use_hardness) {
-        //     p2.dentFace(hardness_map);
-        //   } else {
-        //     p2.dentFace();
-        //   }
-        // }
       }
     }
   }
@@ -1405,19 +1384,8 @@ namespace CGL {
 
     // Now set draw attributes according to the type of mesh element.
     if (element->getFace()) {
-      if (use_hardness) {
-        double h1 = element->getFace()->halfedge()->vertex()->hardness(hardness_map);
-        double h2 = element->getFace()->halfedge()->next()->vertex()->hardness(hardness_map);
-        double h3 = element->getFace()->halfedge()->next()->next()->vertex()->hardness(hardness_map);
-        double h = log((h1 + h2 + h3) / 3. / 40000.) / 5.;
-        Color c = Color(max(min(0.5 + h, 1.), 0.), max(min(0.5 - h, 1.), 0.), 0.0);
-        setColor(c);
-        return; 
-      }
-      else {
-        setColor(style->faceColor);
-        return;
-      }
+      setColor(style->faceColor);
+      return;
     }
     if( element->getEdge()     ) { setColor( style->edgeColor     ); glLineWidth( style->strokeWidth  ); return; }
     if( element->getHalfedge() ) { setColor( style->halfedgeColor ); glLineWidth( style->strokeWidth  ); return; }
@@ -1428,7 +1396,6 @@ namespace CGL {
 
   void MeshEdit::drawFaces( HalfedgeMesh& mesh )
   {
-
     for( FaceIter f = mesh.facesBegin(); f != mesh.facesEnd(); f++ )
     {
 
@@ -1439,7 +1406,7 @@ namespace CGL {
       glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
       glEnable(GL_COLOR_MATERIAL);
 
-      // Coloring.
+      //Coloring.
       setElementStyle( elementAddress( f ) );
 
       // Start specifying the polygon.
@@ -1457,13 +1424,17 @@ namespace CGL {
         if(smoothShading)
           normal = h->vertex()->normal();
         glNormal3dv( &normal.x );
+        if (use_hardness && !shadingMode) {
+          double hardness = h->vertex()->hardness(hardness_map);
+          double c = log(hardness / 40000.) / 5.;
+          glColor3f(max(min(0.5 + c, 1.), 0.), max(min(0.5 - c, 1.), 0.), 0.0);
+        }
         // Draw this vertex.
         Vector3D position = h->vertex()->position;
         glVertex3dv( &position.x );
 
         // go to the next vertex in this polygon
         h = h->next();
-
       } while( h != f->halfedge() ); // end of iteration over polygon vertices
 
       // Finish drawing the polygon.
