@@ -37,7 +37,8 @@ vec3 shadeDiffuseFromEye()
     vec3 n = normalize(normal);
     vec3 out_vec = normalize(eyePos - vertex);
     float diffuse = abs(dot(out_vec, n));
-    return vec3(diffuse);
+    //return vec3(diffuse);
+    return diffuse * color;
 }
 
 vec3 shadePhong(vec3 lightPos)

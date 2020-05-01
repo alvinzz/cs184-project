@@ -1425,10 +1425,15 @@ namespace CGL {
         if(smoothShading)
           normal = h->vertex()->normal();
         glNormal3dv( &normal.x );
-        if (use_hardness && !shadingMode) {
+        if (use_hardness) {
           double hardness = h->vertex()->hardness(hardness_map);
-          double c = log(hardness / 40000.) / 5.;
-          glColor3f(max(min(0.5 + c, 1.), 0.), max(min(0.5 - c, 1.), 0.), 0.0);
+          double c = sqrt(2500. / hardness);
+          if (!shadingMode) {
+            glColor3d(max(min(1 - 2*c, 1.), 0.), max(min(2*c, 1.), 0.), 0.0);
+          } else {
+            // glColor3d(0.9-1.2*c, 0.9-1.2*c, 0.9-1.2*c);
+            glColor3d(pow(c, 0.125), pow(c, 0.125), pow(c, 0.125));
+          }
         }
         // Draw this vertex.
         Vector3D position = h->vertex()->position;
