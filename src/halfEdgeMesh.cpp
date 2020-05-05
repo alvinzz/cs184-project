@@ -1,10 +1,14 @@
 #include "halfEdgeMesh.h"
 #define MAX_DISPLACEMENT 0.001
+// holey: (1, 10, 0.1)
+// marble: (100000, 25)
+// granite: (1, 100)
+// metal: (100000, 100, 0.1)
 #define SHEAR_HARDNESS_BASE 1
 #define FRONT_HARDNESS_BASE 25
 #define EPS_D 0.00000000001
 #define PI 3.14159265359
-#define CREASE_THRESH PI / 2.
+#define CREASE_THRESH PI
 
 namespace CGL {
   void BBox::draw(Color c, float alpha) {
@@ -334,14 +338,11 @@ namespace CGL {
       //  Erosion from shearing off bits and pieces (move normal to face)
       //  Erosion from head-on collisions denting the rock (move in direction of particle)
       Vector3D v1_update = energy.x
-        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
-          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+        * dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction;
       Vector3D v2_update = energy.y
-        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
-          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+        * dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction;
       Vector3D v3_update = energy.z
-        * (sin(acos(dot(direction, n))) / 40000. / SHEAR_HARDNESS_BASE * n
-          + dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction);
+        * dot(direction, n) / 40000. / FRONT_HARDNESS_BASE * direction;
 
       if (v1_update.norm() > MAX_DISPLACEMENT) {
         v1_update /= (v1_update.norm() / MAX_DISPLACEMENT);
@@ -445,24 +446,33 @@ namespace CGL {
       }
 
       // correct creases
-      correct_crease(
-        isect.face,
-        isect.face->halfedge()->twin()->face(),
-        isect.face->halfedge()->vertex(),
-        isect.face->halfedge()->next()->vertex()
-      );
-      correct_crease(
-        isect.face,
-        isect.face->halfedge()->next()->twin()->face(),
-        isect.face->halfedge()->next()->vertex(),
-        isect.face->halfedge()->next()->next()->vertex()
-      );
-      correct_crease(
-        isect.face,
-        isect.face->halfedge()->next()->next()->twin()->face(),
-        isect.face->halfedge()->next()->next()->vertex(),
-        isect.face->halfedge()->vertex()
-      );
+      if (!isect.face->isBoundary() && !isect.face->halfedge()->twin()->face()->isBoundary()
+        && !isect.face->halfedge()->vertex()->isBoundary() && !isect.face->halfedge()->next()->vertex()->isBoundary()) {
+        correct_crease(
+          isect.face,
+          isect.face->halfedge()->twin()->face(),
+          isect.face->halfedge()->vertex(),
+          isect.face->halfedge()->next()->vertex()
+        );
+      }
+      if (!isect.face->isBoundary() && !isect.face->halfedge()->next()->twin()->face()->isBoundary()
+        && !isect.face->halfedge()->next()->vertex()->isBoundary() && !isect.face->halfedge()->next()->next()->vertex()->isBoundary()) {
+        correct_crease(
+          isect.face,
+          isect.face->halfedge()->next()->twin()->face(),
+          isect.face->halfedge()->next()->vertex(),
+          isect.face->halfedge()->next()->next()->vertex()
+        );
+    }
+      if (!isect.face->isBoundary() && !isect.face->halfedge()->next()->next()->twin()->face()->isBoundary()
+        && !isect.face->halfedge()->next()->next()->vertex()->isBoundary() && !isect.face->halfedge()->vertex()->isBoundary()) {
+        correct_crease(
+          isect.face,
+          isect.face->halfedge()->next()->next()->twin()->face(),
+          isect.face->halfedge()->next()->next()->vertex(),
+          isect.face->halfedge()->vertex()
+        );
+      }
   }
 
   double Vertex::hardness(HardnessMap* hardness_map) {
@@ -508,8 +518,10 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    // return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
-    return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
+    // rock
+    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    // // rock
+    // return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
 
   }
 
@@ -556,8 +568,10 @@ namespace CGL {
     }
     // return 40000. * exp(5.*tanh(hardness / sqrt(double(hardness_map->depth))));
     // return 20000. * exp(5.*(tanh(hardness / sqrt(double(hardness_map->depth)))+0.5));
-    // return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
-    return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
+    // rock
+    return 2500. / pow(EPS_D + abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 2.);
+    // // rock
+    // return 200000. * pow(abs(tanh(hardness / sqrt(double(hardness_map->max_depth-hardness_map->min_depth)))), 0.5);
   }
 
   bool Halfedge::isBoundary( void ) const

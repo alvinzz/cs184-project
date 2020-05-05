@@ -272,6 +272,7 @@ namespace CGL {
 
   void MeshEdit::blowParticles() {
     for (int i = 0; i < 10000; i++) {
+      // front-ish
       Vector3D source_position = Vector3D(
         4. * (rand() / double(RAND_MAX) - 0.5),
         1.,
@@ -283,8 +284,17 @@ namespace CGL {
         4. * (rand() / double(RAND_MAX) - 0.5)
       );
       Vector3D direction = (target_position - source_position).unit();
-      double mass = 0.001;
-      double velocity = 10.;
+      // // top
+      // Vector3D source_position = Vector3D(
+      //   2. * (rand() / double(RAND_MAX) - 0.5),
+      //   2. * (rand() / double(RAND_MAX) - 0.5),
+      //   1.
+      // );
+      // Vector3D direction = Vector3D(0., 0., -1.);
+      double mass = 0.001; // sand
+      // double mass = 0.1; // hail
+      double velocity = 10.; // wind
+      // double velocity = 100.; // sandblaster      
       Particle p = Particle(source_position, direction, mass, velocity);
       p.intersect(bvh_tree->root);
 
@@ -1432,9 +1442,12 @@ namespace CGL {
           if (!shadingMode) {
             glColor3d(1.-c, c, 0.0);
           } else {
-            c = pow(hardness / 200000., 0.5);
+            // c = pow(hardness / 200000., 0.5);
+            // glColor3d(min(0.9, 1.2*c), min(0.9, 1.2*c), min(0.9, 1.2*c)); // granite
+            c = pow(2500. / hardness, 0.125);
             glColor3d(min(0.9, 1.2*c), min(0.9, 1.2*c), min(0.9, 1.2*c)); // granite
             // glColor3d(0.9, 0.9, 0.9); // marble
+            // glColor3d(0.5, 0.5, 0.5); // metal
           }
         }
         // Draw this vertex.
