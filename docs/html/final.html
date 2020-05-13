@@ -133,6 +133,107 @@
   <br>
 
 <h2 align="middle">Technical Approach</h2>
+  <p>
+    For our project, we create weathered geometry using a mesh-based system, rather than a particle-based one. This was more compatible with work done previously in the course, specifically project 2. Further, we focused on wind abrasion, which occurs when particles borne by the wind collide with and chip at rocks. This allowed us to reuse code from project 3-1, as we could replace light rays with particles.
+  </p>
+  <p>
+    Previous work which has attempted to simulate weathering of rocks by deforming a mesh has not focused on wind abrasion as the source of erosion, either focusing on water erosion (Mitchell 2017, Tychonievich and Jones 2010, Skorkovska et. al. 2019), curvature-based displacement (Tychonievich and Jones 2010, Skorkovska et. al. 2019), or random displacement (Söderlund 2015). Water erosion differs qualitatively from wind erosion, both in that chemical forces come into play and in that particle deposition is possible. Curvature-based displacement tends to smooth out a mesh, resulting in a loss of texture, which is the opposite of our goal in this project. Lastly, random displacement cannot be used to simulate erosion from a pre-existing mesh.
+  </p>
+  <p>
+    At a high level, our algorithm operates by generating thousands of artificial particles which are “blown” at the mesh at varying directions and speeds. These particles then dent the mesh based on their direction, speed, and the mesh’s geometry at the point of intersection. However, to achieve visually compelling results, it is necessary to introduce an anti-creasing measure and a spatially-varying hardness map.
+  </p>
+  <p>
+    In theory, the particles can be generated according to any distribution, and modeling of their collision with the mesh can be arbitrarily complicated, as in a 56-page-long NASA report on “Abrasion by Aeolian Particles: Earth and Mars” (Greeley et. al. 1984). However, we chose a more simple model: the particle starting location is sampled from a uniform square on one side of the mesh, while its ending location is sampled from a uniform square on the opposing side of the mesh (Figure 3). We were able to achieve visually compelling results with this method, despite holding particle mass and velocity constant.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/boundingbox.PNG" align="middle" width="450px" />
+          <figcaption align="middle">Figure 3: Bounding box model.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p>
+    In order to determine the point of intersection between the particle and the mesh, we used a Bounding Volume Hierarchy, constructed with the Surface Area Heuristic introduced in class. However, since the mesh is constantly being updated due to the particle collisions, we need to make a slight modification. For each face and node in the BVH, we keep a pointer to its parent. Then, after the vertices of a face are updated, we check if the face’s new bounding box exceeds its parent node’s bounding box. If it does, we update the parent node’s bounding box, and check if the parent’s new bounding box exceeds its parent’s bounding box. We repeat this process as long as the current node’s bounding box exceeds its parent’s.
+  </p>
+  <p>
+    Once we have determined the collision point between the particle and the mesh, we displace the vertices of the collision face according to Equation 1. Simplifying the NASA report (Greeley et. al. 1984), there are two major mechanisms of erosion: chipping (first term of Equation 1) and fracturing/denting (second term of Eq. 1, Figure 4). In Eq. 1, the 0.5*m*v*v term is the kinetic energy of the particle, the a term is the barycentric coordinate of the point of intersection corresponding to the vertex in question, the sin(𝜽) and sin(2𝜽) terms involve the angle between the particle and the face normal, the 𝞓AREA term is a normalization term for the area of the triangle so that larger faces are not dented more deeply than smaller ones, and the HARDNESS terms are functions of space and provide texture.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/eq.png" align="middle" width="720px" />
+          <figcaption align="middle">Equation 1</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="../images/denting.PNG" align="middle" width="720px" />
+          <figcaption align="middle">Figure 4: Denting model.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p>
+    Using a uniform hardness map, we were able to achieve the hailstorm and acid rain images pictured in the results section. However, in order to achieve more rock-like textures, it was necessary to add an anti-creasing measure (Figure 5). Without this measure, we found that we often generated sharp folds and creases, which are not common artifacts of weathering due to wind abrasion. To prevent these sharp creases, after indenting a face, we check if the angle between it and its neighboring faces is sharper than a threshold. If this is the case, we take the two shared vertices between the faces and move them in the direction of the average of the face’s normal vectors. If this smooths the crease, we continue the process until the angle threshold is reached. If not, we move the vertices in the opposite direction until the angle threshold is reached. We are able to do this since the two face’s normal vectors are guaranteed to either both point into or out of the mesh due to the half-edge winding direction being constant.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/anticreasing.PNG" align="middle" width="720px" />
+          <figcaption align="middle">Figure 5: Anti-creasing model.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p>
+    To achieve more interesting textures, we also constructed non-uniform hardness maps using multiscale Perlin noise. Perlin noise, introduced by Ken Perlin in 1983, is a smoothly spatially varying type of gradient noise which can be used to produce natural-looking textures at a given spatial scale (Figure 6). In the spirit of brevity, we will not describe the full algorithm used to generate Perlin noise here, but a description of the 2-D algorithm is given at https://en.wikipedia.org/wiki/Perlin_noise. To generate multi-scale Perlin noise, we simply sum Perlin noise at several octaves and normalize by the square root of the number of scales. After some experimentation, we settled on a conversion from the Perlin noise value to CHIP_HARDNESS and DENT_HARDNESS as in Equation 2. However, the two hardnesses were calculated using independent multi-scale Perlin noise maps. A visualization of the hardness map is shown in Figure 7.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/eq2.png" align="middle" width="480px" />
+          <figcaption align="middle">Equation 2</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="../images/PerlinNoiseInterpolated.png" align="middle" width="720px" />
+          <figcaption align="middle">Figure 6: Perlin noise map.</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="../images/hardness2.png" align="middle" width="720px" />
+          <figcaption align="middle">Figure 7: Hardness map.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p>
+    Lastly, we added color texturing, again based on multi-scale Perlin noise. We found that choosing a grayscale value based on the Perlin noise value according to Equation 3 yielded a granite-like color texture map.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/eq3.png" align="middle" width="450px" />
+          <figcaption align="middle">Equation 3</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <p>
+    While doing this project, we ran into a few problems. As previously mentioned, we needed to implement anti-creasing to achieve wind abrasion-like textures. We also found the Greely paper and implemented chipping (in addition to denting) during our efforts to achieve more wind abrasion-like textures instead of a pock-marked landscape. Further, figuring out the formulae for converting from Perlin noise to the hardness maps and color texture took a lot of trial-and-error. Lastly, the most notable bug we encountered occured because we did not originally normalize the indentation by triangle area, so the small triangles stuck out more.
+  </p>
+  <p>
+    Overall, we were pleasantly surprised by the quality of results we were able to achieve with our project, given that we did not use a particle-based simulation, the novelty of the problem, and the limited amount of prior work for wind abrasion on meshes. We were very happy to see that a relatively straightforward extension of the project 2 and 3-1 codebases was able to achieve such striking results, showing that not all algorithms need be complex or computationally intensive.
+  </p>
 
   <br>
 
