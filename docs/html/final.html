@@ -34,6 +34,8 @@
 <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
 <h2 align="middle">Weathering with You: Simulating Building and Statue Weathering</h2>
 <h2 align="middle">Doreene Kang (aaw), Jaeyun Stella Seo (aas), Alvin Zhang (alvinzz)</h2>
+  <br><br>
+<h2 align="middle">Abstract</h2>
   <p>
     Weathered buildings and statues have complex geometric shapes that pose a significant challenge for 3D-animators
     and artists seeking to render realistic scenes (Figure 1). In order to give objects the appearance of age, it
@@ -45,17 +47,155 @@
   <p>
     A visual summary can be found in
     <a href="https://docs.google.com/presentation/d/18zloKUdq45VDLTa4JRnU3cxIEiQpD1ulkHc5znv7YZs/edit?usp=sharing and a video">this slide deck</a>
-    and a video summary can be found <a href="">here</a>.
+    and a video summary can be found <a href="https://drive.google.com/file/d/16apdOa7cF19D8lOcSlz_d5gT4_r7JY_z/view?usp=sharing">here</a>.
   </p>
-<br><br>
-
-<h2 align="middle">Abstract</h2>
+  <iframe src="https://drive.google.com/file/d/16apdOa7cF19D8lOcSlz_d5gT4_r7JY_z/preview" width="640" height="480"></iframe>
 
 
 <h2 align="middle">Technical Approach</h2>
 <h2 align="middle">Results</h2>
+  <p>
+    The simplest case we generated was to mimic a hailstorm. All particles move in the same direction. For example,
+    you could subject a cow-mesh to particles coming from a head-on direction.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/cow0.png" align="middle" width="450px" />
+          <figcaption align="middle">Cow before simulation.</figcaption>
+        </td>
+        <td>
+          <img src="../images/cow20.png" align="middle" width="450px" />
+          <figcaption align="middle">Cow after 20 timesteps.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    For a more relatable and useful example, we subjected the hood of a VW Beetle to particles that came from above.
+    This left dents in the Beetle’s hood, quite similar to what can happen to a car left out in a severe hailstorm.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/car_hail.png" align="middle" width="450px" />
+          <figcaption align="middle">Simulated dented hood.</figcaption>
+        </td>
+        <td>
+          <img src="../images/car_hail_irl.jpg" align="middle" width="450px" />
+          <figcaption align="middle">Reference.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    With minor modifications to the hailstorm case, we were able to generate surfaces that looked like they had been
+    weathered by acid rain. The particles still come from the top, but they have more energy and therefore indent the
+    mesh more deeply upon impact. This resulted in very jagged and rugged bumps and gouges similar to those left behind
+    on statues exposed to acid rain. It is also interesting to note that this result looks very similar to mountain
+    ranges, so this technique could also be applied to create landscapes.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/holey_cow.png" align="middle" width="450px" />
+          <figcaption align="middle">Cow weathered by acid rain.</figcaption>
+        </td>
+        <td>
+          <img src="../images/acid_rain_irl.jpg" align="middle" width="450px" />
+          <figcaption align="middle">Reference.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    The sandblasted marble result looks much smoother and has shallower dents compared to the acid rain result.
+    This gives a much more visually appealing appearance. We were able to achieve this look by implementing
+    anti-creasing measures to prevent sharp edges and adding varying hardnesses along different points for more
+    varied dents.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/sandblasted_marble.png" align="middle" width="450px" />
+          <figcaption align="middle">Simulated sandblasted marble.</figcaption>
+        </td>
+        <td>
+          <img src="../images/sandblasted_marble_irl.jpg" align="middle" width="450px" />
+          <figcaption align="middle">Reference.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    By adding a 2D texture to the sand-blasted marble result, we could also recreate something that looked similar
+    to granite rock.
+  </p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="../images/granite_rock.png" align="middle" width="450px" />
+          <figcaption align="middle">Simulated granite.</figcaption>
+        </td>
+        <td>
+          <img src="../images/campus_rock1.jpg" align="middle" width="450px" />
+          <figcaption align="middle">Reference.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
 <h2 align="middle">References</h2>
-<h2 align="middle">Contributions</h2>
+  <h3 align="middle">Technical References</h3>
+  <ul>
+    <li> Greeley et. all “Abrasion by Aeolian Particles: Earth and Mars” https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840012586.pdf </li>
+    <li> Mitchell 2017, “Procedural Surface Weathering of Cultural Stone Through Physically Based Mesh Deformations” https://oaktrust.library.tamu.edu/handle/1969.1/165977  </li>
+    <li> Söderlund 2015, “Procedural Modeling of Rocks” http://www.diva-portal.org/smash/get/diva2:817559/FULLTEXT01.pdf </li>
+    <li> Skorkovska et. al. 2019, “A Unified Curvature-driven Approach for Weathering and Hydraulic Erosion Simulation on Triangular Meshes” https://www.scitepress.org/Papers/2019/75664/75664.pdf </li>
+    <li> Tychonievich and Jones 2010, “Delaunay deformable mesh for the weathering and erosion of 3D terrain” https://link.springer.com/article/10.1007/s00371-010-0506-2 </li>
+  </ul>
+  <h3 align="middle">Image References</h3>
+  <ul>
+    <li> Perlin Noise: https://en.wikipedia.org/wiki/Perlin_noise </li>
+    <li>Wall-E Buy n Large Gas Station: https://www.wallpaperflare.com/buy-n-large-gas-station-wallpaper-wall-e-disney-movies-animated-movies-wallpaper-phhus </li>
+    <li>Hailstorm reference: https://www.cashcarsbuyer.com/sell-my-hail-damaged-car/ </li>
+    <li>Acid Rain reference: https://www.britannica.com/story/what-happened-to-acid-rain </li>
+    <li>Mountain Range reference: https://www.facebook.com/NGM/photos/a.406883368335/10158485123013336/?type=3&theater </li>
+    <li>Sandblasted marble reference: http://www.mauromarmi.it/en/sandblasting-marble/ </li>
+    <li>Granite reference: https://www.shutterstock.com/image-photo/granite-rock-face-closeup-414828955 </li>
+  </ul>
+
+
+  <h2 align="middle">Contributions</h2>
+  <h3 align="left">Alvin Zhang</h3>
+    <p>
+      Alvin was responsible for introducing the anti-creasing measure, generating the hardness map, and creating
+      the granite texture.
+    </p>
+  <h3 align="left">Doreene Kang</h3>
+    <p>
+      Doreene was responsible for implementing the mesh-denting algorithm that created the Hailstorm and Acid Rain
+      results. She also created all videos to document work.
+    </p>
+  <h3 align="left">Stella Seo</h3>
+    <p>
+      Stella was responsible for literature review and documentation for reports. She also helped organize the code
+      architecture and made the website.
+    </p>
+  <h3 align="">Cody K.</h3>
+    <p>Moral support.</p>
+  <h3 align="">Luna S.Z.</h3>
+    <p>Moral support.</p>
+
 
 </body>
 </html>
